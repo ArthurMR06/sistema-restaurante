@@ -67,6 +67,7 @@
 <div id="modalEdicao" class="modal-overlay">
     <div class="modal-content modal-edicao">
         <h3>✏️ Editar Pedido</h3>
+        <p>Abaixo estão os dados brutos do pedido:</p>
         <textarea id="textoEdicao"></textarea>
         <button class="btn verde" onclick="salvarEdicao()">Salvar Alterações</button>
         <button class="btn" style="background:#bbb; color:white;" onclick="fecharModalEdicao()">Cancelar</button>
@@ -111,9 +112,10 @@ onValue(ref(db, 'pedidosDia'), (snapshot) => {
     todosPedidosObjeto = data;
     let textoAcumulado = "";
     Object.values(data).forEach(p => {
-        textoAcumulado += p + "\n\n-----------------------------\n\n";
+        textoAcumulado += p + "\n\n";
     });
-    display.textContent = textoAcumulado;
+
+    display.textContent = textoAcumulado.trim();
     let dadosCalculados = extrairResumoPedidos(textoAcumulado);
     totalDisplay.textContent = dadosCalculados.totalGeral.toFixed(2);
 });
@@ -143,10 +145,15 @@ function extrairResumoPedidos(texto) {
 }
 
 window.abrirModalSenha = function(tipo) {
-    let cod = (tipo === 'cancelar') ? document.getElementById('codigoCancelar').value : document.getElementById('codigoEditar').value;
-    if (!cod) return alert("Por favor, digite o código do pedido!");
+    let codigo = (tipo === 'cancelar') ? document.getElementById('codigoCancelar').value : document.getElementById('codigoEditar').value;
+    if (!codigo) {
+        alert("Por favor, digite o código do pedido!");
+        return;
+    }
     acaoPendente = tipo;
     document.getElementById('modalSenha').style.display = 'flex';
+    document.getElementById('senhaGerente').value = '';
+    document.getElementById('senhaGerente').focus();
 };
 
 window.fecharModal = function() { document.getElementById('modalSenha').style.display = 'none'; };
@@ -154,8 +161,13 @@ window.fecharModal = function() { document.getElementById('modalSenha').style.di
 window.toggleSenhaModal = function() {
     let input = document.getElementById("senhaGerente");
     let icone = document.getElementById("iconeOlho");
-    input.type = (input.type === "password") ? "text" : "password";
-    icone.innerText = (input.type === "text") ? "🚫" : "👁️";
+    if (input.type === "password") {
+        input.type = "text";
+        icone.innerText = "🚫";
+    } else {
+        input.type = "password";
+        icone.innerText = "👁️";
+    }
 };
 
 window.validarSenhaGerente = function() {
@@ -163,7 +175,7 @@ window.validarSenhaGerente = function() {
         fecharModal();
         if (acaoPendente === 'cancelar') executarCancelamento();
         if (acaoPendente === 'editar') abrirEdicao();
-    } else { alert("Senha incorreta!"); }
+    } else { alert("Senha do gerente incorreta!"); }
 };
 
 function executarCancelamento() {
@@ -177,10 +189,10 @@ function executarCancelamento() {
     }
     if (idParaDeletar) {
         remove(ref(db, `pedidosDia/${idParaDeletar}`)).then(() => {
-            alert("✅ Pedido cancelado!");
+            alert("✅ Pedido " + codigoBuscado + " cancelado com sucesso!");
             document.getElementById('codigoCancelar').value = '';
         });
-    } else { alert("Não encontrado!"); }
+    } else { alert("Pedido não encontrado!"); }
 }
 
 function abrirEdicao() {
@@ -193,46 +205,78 @@ function abrirEdicao() {
         }
     }
     if (idFirebaseGlobal) {
-        document.getElementById('textoEdicao').value = todosPedidosObjeto[idFirebaseGlobal];
+        document.getElementById('textoEdicao').value = todosPedidosObjeto[idFirebaseGlobal].trim();
         document.getElementById('modalEdicao').style.display = 'flex';
-    } else { alert("Não encontrado!"); }
+    } else { alert("Pedido não encontrado!"); }
 }
 
 window.fecharModalEdicao = function() { document.getElementById('modalEdicao').style.display = 'none'; };
 
 window.salvarEdicao = function() {
-    const novoConteudo = document.getElementById('textoEdicao').value;
-    if(!novoConteudo.trim()) return alert("Vazio!");
+    let novoConteudo = document.getElementById('textoEdicao').value;
+    if(novoConteudo.trim() === "") return alert("O campo não pode ficar vazio!");
     set(ref(db, `pedidosDia/${idFirebaseGlobal}`), novoConteudo).then(() => {
-        alert("✅ Salvo!");
+        alert("✅ Pedido editado com sucesso!");
         fecharModalEdicao();
         document.getElementById('codigoEditar').value = '';
     });
 };
 
 window.zerarContador = function() {
-    if(confirm("Zerar tudo?")){
+    if(confirm("Deseja realmente zerar todos os dados?")){
         remove(ref(db, 'pedidosDia'));
         set(ref(db, 'contadorCodigo'), 1);
     }
 };
 
 window.imprimirResumo = function() {
-    let textoPedidos = document.getElementById('pedidosSalvos').textContent;
-    let dados = extrairResumoPedidos(textoPedidos);
+    let pedidos = document.getElementById('pedidosSalvos').textContent;
+    let dados = extrairResumoPedidos(pedidos);
     let troco = document.getElementById('troco').value;
+    let data = new Date().toLocaleString('pt-BR');
+    
     let win = window.open('', '_blank');
     win.document.write(`
-        <html><body style="font-family:'Courier New';width:280px;font-size:12px;">
-            <center><strong>RESUMO DE VENDAS</strong></center><hr>
-            ${dados.lista.map(i => `<div>#${i.cod} | R$ ${i.vTotal.toFixed(2)} | R$ ${i.vFrete.toFixed(2)}</div>`).join('')}
-            <hr>
-            <div>Vendas: R$ ${dados.totalProdutos.toFixed(2)}</div>
-            <div>Fretes: R$ ${dados.totalFrete.toFixed(2)}</div>
-            <div>Troco: R$ ${parseFloat(troco).toFixed(2)}</div>
-            <hr>
-            <strong>CAIXA: R$ ${dados.totalGeral.toFixed(2)}</strong>
-        </body></html>
+        <html>
+        <head>
+            <style>
+                body { font-family: 'Courier New', Courier, monospace; width: 280px; font-size: 12px; }
+                .centralizado { text-align: center; }
+                .separador { border-top: 1px dashed #000; margin: 5px 0; }
+                .item { display: flex; justify-content: space-between; }
+                @media print { margin: 0; }
+            </style>
+        </head>
+        <body>
+            <div class="centralizado">
+                <strong>RESUMO DE VENDAS</strong><br>${data}
+            </div>
+            <div class="separador"></div>
+            <div class="item"><strong>CÓD | TOTAL | FRETE</strong></div>
+            <div class="separador"></div>
+    `);
+
+    dados.lista.forEach(item => {
+        win.document.write(`
+            <div class="item">
+                <span>#${item.cod}</span>
+                <span>R$ ${item.vTotal.toFixed(2)}</span>
+                <span>R$ ${item.vFrete.toFixed(2)}</span>
+            </div>
+        `);
+    });
+
+    win.document.write(`
+            <div class="separador"></div>
+            <div class="item"><span>Total Vendas:</span> <span>R$ ${dados.totalProdutos.toFixed(2)}</span></div>
+            <div class="item"><span>Total Fretes:</span> <span>R$ ${dados.totalFrete.toFixed(2)}</span></div>
+            <div class="item"><span>Troco Informado:</span> <span>R$ ${parseFloat(troco).toFixed(2)}</span></div>
+            <div class="separador"></div>
+            <div class="item" style="font-size: 14px;"><strong>VALOR EM CAIXA:</strong> <strong>R$ ${dados.totalGeral.toFixed(2)}</strong></div>
+            <div class="separador"></div>
+            <div class="centralizado"><br>.</div>
+        </body>
+        </html>
     `);
     win.document.close();
     win.print();

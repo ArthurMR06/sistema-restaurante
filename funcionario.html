@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8" />
-<title>Funcionário - Registrar Pedidos</title>
+<title>Funcionário - Registrar Pedidos Múltiplos</title>
 <style>
   body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; }
   .container { background: white; padding: 20px; margin: auto; width: 90%; max-width: 900px; margin-top: 20px; border-radius: 10px; }
@@ -11,11 +11,17 @@
   .top-inputs input, .top-inputs select { flex: 1 1 200px; }
   .contador-pedidos { font-weight: bold; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
   .contador-pedidos button { width: 30px; height: 30px; font-size: 20px; cursor: pointer; border-radius: 5px; border: 1px solid #999; background: white; }
+  .contador-pedidos span { min-width: 25px; text-align: center; font-size: 18px; }
   .pedido { border: 2px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; background: #fafafa; }
+  .pedido h3 { margin-top: 0; margin-bottom: 15px; }
   .row { display: flex; gap: 20px; flex-wrap: wrap; }
   .coluna { flex: 1; min-width: 220px; text-align: left; }
+  .coluna b { display: block; margin-bottom: 10px; font-weight: bold; }
   label { display: flex; align-items: center; margin-bottom: 6px; cursor: pointer; }
-  .btn { width: 100%; padding: 12px; margin-top: 5px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; }
+  input[type="checkbox"], input[type="radio"] { width: 16px; height: 16px; margin-right: 8px; flex-shrink: 0; cursor: pointer; }
+  label span { display: inline-block; line-height: 1.2; }
+  .price { margin-left: auto; white-space: nowrap; font-weight: normal; font-size: 0.9em; color: #333; }
+  .btn { width: 100%; padding: 12px; margin-top: 15px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; }
   .verde { background: #28a745; color: white; }
   .azul { background: #007bff; color: white; }
   .laranja { background: #ff9800; color: white; }
@@ -23,6 +29,7 @@
   @media print {
     body * { visibility: hidden; }
     #printArea { display: block !important; visibility: visible !important; position: absolute; left: 0; top: 0; width: 100%; font-family: monospace; font-size: 12px; white-space: pre-wrap; }
+    #printArea * { visibility: visible !important; }
   }
   footer { text-align: center; margin-top: 40px; padding-bottom: 20px; font-size: 14px; color: #666; }
 </style>
@@ -48,18 +55,20 @@
   <button id="mais">+</button>
 </div>
 <div id="pedidosContainer"></div>
-<button class="btn laranja" onclick="salvarPedido()">💾 Salvar Pedido na Nuvem</button>
+<button class="btn laranja" onclick="salvarPedido()">💾 Salvar Pedido</button>
 <button class="btn verde" onclick="gerarNotinha()">🧾 Gerar Notinha</button>
 <button class="btn azul" onclick="enviarWhats()">📱 Enviar no WhatsApp</button>
-<button class="btn azul" onclick="window.location.href='fechamento.html'">📊 Ir para Fechamento</button>
+<button class="btn azul" onclick="window.location.href='fechamento.html'">📊 Fechamento de Caixa</button>
 </div>
 <div id="printArea"></div>
 
-<footer>© 2026 Arthur M. Rangel | Versão 1.0</footer>
+<footer>
+    © 2026 Arthur M. Rangel  |  Versão 1.0
+</footer>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, onValue, set, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getDatabase, ref, onValue, set, push, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBOPhRR_S7Awx8T6Z8_zo2DPVP1hmrHttc",
@@ -74,152 +83,193 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Variáveis Globais (Vindas do Banco)
-window.cardapio = {carnes:[],acomp:[],bebidas:[]};
-window.contadorCodigo = 1;
-window.quantidade = 1;
+const pedidosContainer = document.getElementById('pedidosContainer');
+const qtdSpan = document.getElementById('quantidade');
 
-// Escutar Cardápio em Tempo Real
+// Variáveis de estado
+window.quantidade = 1;
+window.contadorCodigo = 1;
+window.cardapio = {carnes:[], acomp:[], bebidas:[]};
+
+// Sincronização com Firebase
 onValue(ref(db, 'cardapioDia'), (snapshot) => {
-    if(snapshot.exists()) {
-        window.cardapio = snapshot.val();
-        atualizarPedidos();
-    }
+    if(snapshot.exists()) window.cardapio = snapshot.val();
+    window.atualizarPedidos();
 });
 
-// Escutar Contador em Tempo Real
 onValue(ref(db, 'contadorCodigo'), (snapshot) => {
     window.contadorCodigo = snapshot.val() || 1;
-    atualizarPedidos();
+    window.atualizarPedidos();
 });
 
-const pedidosContainer=document.getElementById('pedidosContainer');
-const qtdSpan=document.getElementById('quantidade');
-
-const freteInput=document.getElementById("valorFrete");
-freteInput.addEventListener("input",e=>{
-  let v=e.target.value.replace(/\D/g,"");
-  v=(parseInt(v||0)/100).toFixed(2).replace(".",",");
-  e.target.value="R$ "+v;
+const freteInput = document.getElementById("valorFrete");
+freteInput.addEventListener("input", e => {
+  let v = e.target.value.replace(/\D/g, "");
+  v = (parseInt(v || 0) / 100).toFixed(2).replace(".", ",");
+  e.target.value = "R$ " + v;
 });
 
-function obterValorFrete(){
-  let v=freteInput.value.replace(/[^\d,]/g,"").replace(",",".");
-  return parseFloat(v)||0;
+function obterValorFrete() {
+  let v = freteInput.value.replace(/[^\d,]/g, "").replace(",", ".");
+  return parseFloat(v) || 0;
 }
 
-window.atualizarPedidos = function(){
-  pedidosContainer.innerHTML="";
-  for(let i=0;i<window.quantidade;i++){
-    pedidosContainer.appendChild(criarPedidoForm(i));
-  }
-  qtdSpan.textContent=window.quantidade;
-}
+function criarPedidoForm(index) {
+  const pedidoDiv = document.createElement('div');
+  pedidoDiv.className = 'pedido';
+  pedidoDiv.dataset.index = index;
 
-function criarPedidoForm(index){
-  const pedidoDiv=document.createElement('div');
-  pedidoDiv.className='pedido';
-  function criarInputs(tipo,lista,inputType="radio",maxCheck=0){
-    return lista.map(item=>{
-      if(inputType==="checkbox"){
-        return `<label><input type="checkbox" class="${tipo}" data-index="${index}" value="${item}" ${maxCheck>0?`onchange="limiteAcompanhamento(${index})"`:""} /> <span>${item}</span></label>`;
-      }else{
+  function criarInputs(tipo, lista, inputType = "radio", maxCheck = 0) {
+    return lista.map(item => {
+      if (inputType === "checkbox") {
+        return `<label><input type="checkbox" class="${tipo}" data-index="${index}" value="${item}" ${maxCheck > 0 ? `onchange="limiteAcompanhamento(${index})"` : ""} /> <span>${item}</span></label>`;
+      } else {
         return `<label><input type="radio" name="${tipo}_${index}" value="${item}" /> <span>${item}</span></label>`;
       }
     }).join("");
   }
-  pedidoDiv.innerHTML=`
-    <h3>Pedido ${String(index+window.contadorCodigo).padStart(3,'0')}</h3>
-    <div>
-      <b>Tamanho:</b>
-      <label><input type="radio" name="tamanho_${index}" value="Pequena" /> <span>Pequena (R$13)</span></label>
-      <label><input type="radio" name="tamanho_${index}" value="Média" /> <span>Média (R$16)</span></label>
-      <label><input type="radio" name="tamanho_${index}" value="Grande" /> <span>Grande (R$20)</span></label>
+
+  pedidoDiv.innerHTML = `
+    <h3>Pedido ${String(index + window.contadorCodigo).padStart(3, '0')}</h3>
+    <div class="pedidoBox">
+      <b>Tamanho da Marmita:</b>
+      <label><input type="radio" name="tamanho_${index}" value="Pequena" /> <span>Pequena</span> <span class="price">R$13</span></label>
+      <label><input type="radio" name="tamanho_${index}" value="Média" /> <span>Média</span> <span class="price">R$16</span></label>
+      <label><input type="radio" name="tamanho_${index}" value="Grande" /> <span>Grande</span> <span class="price">R$20</span></label>
     </div>
     <div class="row">
-      <div class="coluna"><b>Carnes:</b>${criarInputs("carne",window.cardapio.carnes)}</div>
-      <div class="coluna"><b>Acompanhamentos:</b>${criarInputs("acomp",window.cardapio.acomp,"checkbox",5)}</div>
-      <div class="coluna"><b>Bebidas:</b>${criarInputs("bebida",window.cardapio.bebidas,"checkbox")}</div>
+      <div class="coluna"><b>Carnes:</b>${criarInputs("carne", window.cardapio.carnes)}</div>
+      <div class="coluna"><b>Acompanhamentos (máx 5):</b>${criarInputs("acomp", window.cardapio.acomp, "checkbox", 5)}</div>
+      <div class="coluna"><b>Bebidas:</b>${criarInputs("bebida", window.cardapio.bebidas, "checkbox")}</div>
     </div>
-    <input type="text" id="obs_${index}" placeholder="Observação..." style="margin-top:10px; width:95%" />
+    <div style="margin-top:10px;">
+      <b>Observação:</b>
+      <input type="text" id="obs_${index}" placeholder="Ex: sem cebola, bem passado, etc." style="width:95%;" />
+    </div>
   `;
   return pedidoDiv;
 }
 
-document.getElementById('mais').onclick=()=>{window.quantidade++; window.atualizarPedidos();};
-document.getElementById('menos').onclick=()=>{if(window.quantidade>1){window.quantidade--; window.atualizarPedidos();}};
-
-window.limiteAcompanhamento = function(idx){
-  const checkboxes=document.querySelectorAll(`.acomp[data-index="${idx}"]:checked`);
-  if(checkboxes.length>5){checkboxes[checkboxes.length-1].checked=false;alert("Máximo de 5!");}
+window.atualizarPedidos = function() {
+  pedidosContainer.innerHTML = "";
+  for (let i = 0; i < window.quantidade; i++) {
+    pedidosContainer.appendChild(criarPedidoForm(i));
+  }
+  qtdSpan.textContent = window.quantidade;
 }
 
-window.montarPedido = function(isWhats=false){
-  let nome=document.getElementById("nomeCliente").value.trim();
-  let endereco=document.getElementById("enderecoCliente").value.trim();
-  if(!nome||!endereco){alert("Preencha nome e endereço");return null;}
-  
-  let texto=isWhats ? "*NOVO PEDIDO* 🍱\n\n" : "";
-  let totalGeral=0;
-  
-  for(let i=0;i<window.quantidade;i++){
-    let codigo=String(window.contadorCodigo+i).padStart(3,'0');
-    let tamanho=document.querySelector(`input[name="tamanho_${i}"]:checked`);
-    let carne=document.querySelector(`input[name="carne_${i}"]:checked`);
-    if(!tamanho||!carne){alert(`Falta preencher o pedido ${codigo}`);return null;}
-    
-    let acomp=Array.from(document.querySelectorAll(`.acomp[data-index="${i}"]:checked`)).map(a=>a.value);
-    let bebidas=Array.from(document.querySelectorAll(`.bebida[data-index="${i}"]:checked`)).map(b=>b.value);
-    let obs=document.getElementById(`obs_${i}`).value.trim();
-    
-    let total= (tamanho.value=="Pequena") ? 13 : (tamanho.value=="Média") ? 16 : 20;
-    if(carne.value=="Filé mignon"||carne.value=="Estrogonofe") total+=2;
-    
-    bebidas.forEach(b=>{
-        let n=b.toLowerCase();
-        if(n.includes("limoneto")) total+=13; else if(n.includes("suco")) total+=10; 
-        else if(n.includes("água")) total+=2; else if(n.includes("guaravita")) total+=2.5;
-        else if(n.includes("600")) total+=8; else total+=12;
-    });
+document.getElementById('mais').onclick = () => { if (window.quantidade < 20) { window.quantidade++; window.atualizarPedidos(); } };
+document.getElementById('menos').onclick = () => { if (window.quantidade > 1) { window.quantidade--; window.atualizarPedidos(); } };
 
-    totalGeral+=total;
-    texto += `CÓDIGO: ${codigo}\nCLIENTE: ${nome}\nENDEREÇO: ${endereco}\nMARMITA: ${carne.value} (${tamanho.value})\nACOMP: ${acomp.join(",")}\nBEBIDA: ${bebidas.join(",")}\nOBS: ${obs}\nTOTAL: R$ ${total.toFixed(2)}\n-----------------------------\n`;
+window.limiteAcompanhamento = function(idx) {
+  const checkboxes = document.querySelectorAll(`.acomp[data-index="${idx}"]:checked`);
+  if (checkboxes.length > 5) { checkboxes[checkboxes.length - 1].checked = false; alert("Máximo de 5 acompanhamentos!"); }
+}
+
+window.montarPedido = function(isWhats = false) {
+  let nome = document.getElementById("nomeCliente").value.trim();
+  let telefone = document.getElementById("telefoneCliente").value.trim();
+  let endereco = document.getElementById("enderecoCliente").value.trim();
+  let ponto = document.getElementById("pontoReferencia").value.trim();
+  let freteSelecionado = document.getElementById("temFrete").value === "sim";
+  let valorFrete = obterValorFrete();
+  if (!nome || !endereco) { alert("Preencha nome e endereço"); return null; }
+  
+  let texto = isWhats ? "*NOVO PEDIDO* 🍱\n\n" : "";
+  let totalGeral = 0;
+  
+  for (let i = 0; i < window.quantidade; i++) {
+    let codigo = String(window.contadorCodigo + i).padStart(3, '0');
+    let tamanho = document.querySelector(`input[name="tamanho_${i}"]:checked`);
+    let carne = document.querySelector(`input[name="carne_${i}"]:checked`);
+    let acompElems = document.querySelectorAll(`.acomp[data-index="${i}"]:checked`);
+    let bebidasElems = document.querySelectorAll(`.bebida[data-index="${i}"]:checked`);
+    let obs = document.getElementById(`obs_${i}`).value.trim();
+    
+    if (!tamanho || !carne) { alert(`Preencha todos os campos do pedido ${codigo}`); return null; }
+    
+    let acomp = Array.from(acompElems).map(a => a.value);
+    let bebidas = Array.from(bebidasElems).map(b => b.value);
+    let total = 0;
+    
+    if (tamanho.value == "Pequena") total += 13;
+    else if (tamanho.value == "Média") total += 16;
+    else total += 20;
+    
+    if (carne.value == "Filé mignon" || carne.value == "Estrogonofe") total += 2;
+    
+    bebidas.forEach(b => { 
+        let n = b.toLowerCase(); 
+        if (n.includes("limoneto")) total += 13; 
+        else if (n.includes("suco")) total += 10; 
+        else if (n.includes("água")) total += 2; 
+        else if (n.includes("guaravita")) total += 2.5; 
+        else if (n.includes("guaraviton")) total += 8; 
+        else if (n.includes("600")) total += 8; 
+        else total += 12; 
+    });
+    
+    totalGeral += total;
+    if (isWhats) {
+      texto += `🆔 *Nº ${codigo}*\n👤 *Cliente:* ${nome}\n📍 *End:* ${endereco}\n`;
+      if (ponto) texto += `📍 *Ref:* ${ponto}\n`;
+      texto += `🍱 *Marmita (${tamanho.value}):* ${carne.value}\n`;
+      if (acomp.length > 0) texto += `➕ *Acomp:* ${acomp.join(", ")}\n`;
+      if (bebidas.length > 0) texto += `🥤 *Bebida:* ${bebidas.join(", ")}\n`;
+      if (obs) texto += `⚠️ *OBS:* ${obs}\n`;
+      texto += `💰 *Subtotal:* R$ ${total.toFixed(2)}\n\n-----------------------------\n\n`;
+    } else {
+      texto += `CÓDIGO: ${codigo}\nCLIENTE: ${nome}\nTEL: ${telefone}\nENDEREÇO: ${endereco}\n`;
+      if (ponto) texto += `PONTO: ${ponto}\n`;
+      texto += `\nMARMITA (${tamanho.value}): ${carne.value}\n`;
+      acomp.forEach(a => texto += `Acompanhamento: ${a}\n`);
+      bebidas.forEach(b => texto += `Bebida: ${b}\n`);
+      if (obs) texto += `\n*** OBS: ${obs} ***\n`;
+      texto += `TOTAL: R$ ${total.toFixed(2)}\n\n-----------------------------\n\n`;
+    }
   }
   
-  let vFrete = obterValorFrete();
-  if(vFrete > 0) {
-      totalGeral += vFrete;
-      texto += `FRETE: R$ ${vFrete.toFixed(2)}\n`;
+  if (freteSelecionado) {
+    texto += isWhats ? `🛵 *FRETE:* R$ ${valorFrete.toFixed(2)}\n` : `FRETE: R$ ${valorFrete.toFixed(2)}\n`;
+    totalGeral += valorFrete;
   }
-  texto += `TOTAL GERAL: R$ ${totalGeral.toFixed(2)}`;
+  texto += isWhats ? `✅ *TOTAL GERAL: R$ ${totalGeral.toFixed(2)}*` : `TOTAL GERAL: R$ ${totalGeral.toFixed(2)}\n`;
   return texto;
 }
 
-window.salvarPedido = function(){
-  let texto=window.montarPedido();
-  if(!texto) return;
-  
-  push(ref(db, 'pedidosDia'), texto).then(() => {
-    set(ref(db, 'contadorCodigo'), window.contadorCodigo + window.quantidade);
-    alert("Pedido salvo com sucesso!");
-    window.quantidade=1;
-    window.atualizarPedidos();
+window.salvarPedido = function() {
+  let texto = window.montarPedido();
+  if (!texto) return;
+
+  // Salva no Firebase em vez do localStorage
+  push(ref(db, 'pedidosSalvos'), {
+      texto: texto,
+      data: new Date().toISOString()
+  }).then(() => {
+      let novoContador = window.contadorCodigo + window.quantidade;
+      set(ref(db, 'contadorCodigo'), novoContador);
+      alert("Pedido salvo com sucesso!");
+      window.quantidade = 1;
+      window.atualizarPedidos();
   });
 }
 
-window.gerarNotinha = function(){
-  let texto=window.montarPedido();
-  if(!texto) return;
-  document.getElementById("printArea").textContent=texto;
+window.gerarNotinha = function() {
+  let texto = window.montarPedido();
+  if (!texto) return;
+  document.getElementById("printArea").textContent = texto;
   window.print();
 }
 
-window.enviarWhats = function(){
-  let texto=window.montarPedido(true);
-  if(!texto) return;
-  let num=document.getElementById("telefoneCliente").value.replace(/\D/g,"");
-  window.open(`https://api.whatsapp.com/send?phone=55${num}&text=${encodeURIComponent(texto)}`,"_blank");
+window.enviarWhats = function() {
+  let texto = window.montarPedido(true);
+  if (!texto) return;
+  let numero = document.getElementById("telefoneCliente").value.replace(/\D/g, "");
+  let url = numero ? `https://api.whatsapp.com/send?phone=55${numero}&text=${encodeURIComponent(texto)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+  window.open(url, "_blank");
 }
+
+document.addEventListener("DOMContentLoaded", () => { window.atualizarPedidos(); });
 </script>
 </body>
 </html>

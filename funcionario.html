@@ -86,12 +86,10 @@ const db = getDatabase(app);
 const pedidosContainer = document.getElementById('pedidosContainer');
 const qtdSpan = document.getElementById('quantidade');
 
-// Variáveis de estado
 window.quantidade = 1;
 window.contadorCodigo = 1;
 window.cardapio = {carnes:[], acomp:[], bebidas:[]};
 
-// Sincronização com Firebase
 onValue(ref(db, 'cardapioDia'), (snapshot) => {
     if(snapshot.exists()) window.cardapio = snapshot.val();
     window.atualizarPedidos();
@@ -241,11 +239,9 @@ window.salvarPedido = function() {
   let texto = window.montarPedido();
   if (!texto) return;
 
-  // Salva no Firebase em vez do localStorage
-  push(ref(db, 'pedidosSalvos'), {
-      texto: texto,
-      data: new Date().toISOString()
-  }).then(() => {
+  // CORREÇÃO: Enviando diretamente a string 'texto' para o caminho 'pedidosDia'
+  // para que o Fechamento original consiga ler sem erros de objeto.
+  push(ref(db, 'pedidosDia'), texto).then(() => {
       let novoContador = window.contadorCodigo + window.quantidade;
       set(ref(db, 'contadorCodigo'), novoContador);
       alert("Pedido salvo com sucesso!");

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Fechamento de Caixa</title>
+<style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+    .container { background:white; padding:20px; margin:auto; width:90%; max-width:900px; border-radius:10px; }
+    pre { background:#fafafa; padding:15px; border: 1px solid #ddd; white-space: pre-wrap; max-height: 400px; overflow: auto; }
+    .btn { width:100%; padding:12px; margin-top:10px; font-size:16px; border:none; border-radius:5px; cursor:pointer; font-weight: bold; }
+    .verde { background:#28a745; color:white; }
+    .fechamento { background:#f44336; color:white; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>📊 Fechamento de Caixa (Nuvem)</h2>
+    <p><b>Pedidos registrados:</b></p>
+    <pre id="pedidosSalvos">Carregando dados da nuvem...</pre>
+    <p style="font-size: 1.2em;"><b>Total Estimado:</b> R$ <span id="totalCaixa">0.00</span></p>
+    <button class="btn verde" onclick="window.print()">🖨️ Imprimir Tela</button>
+    <button class="btn fechamento" onclick="limparTudo()">♻️ Limpar Banco / Novo Dia</button>
+    <button class="btn" onclick="window.location.href='funcionario.html'">⬅️ Voltar</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBOPhRR_S7Awx8T6Z8_zo2DPVP1hmrHttc",
+    authDomain: "projeto-restaurante-1e87f.firebaseapp.com",
+    databaseURL: "https://projeto-restaurante-1e87f-default-rtdb.firebaseio.com",
+    projectId: "projeto-restaurante-1e87f",
+    storageBucket: "projeto-restaurante-1e87f.firebasestorage.app",
+    messagingSenderId: "723006543313",
+    appId: "1:723006543313:web:b7a50bda103b0ec607bcf0"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+onValue(ref(db, 'pedidosDia'), (snapshot) => {
+    const data = snapshot.val();
+    const display = document.getElementById('pedidosSalvos');
+    const totalDisplay = document.getElementById('totalCaixa');
+    
+    if(!data) {
+        display.textContent = "Nenhum pedido hoje.";
+        totalDisplay.textContent = "0.00";
+        return;
+    }
+
+    let textoCompleto = "";
+    let somaTotal = 0;
+
+    Object.values(data).forEach(pedidoTexto => {
+        textoCompleto += pedidoTexto + "\n\n========================\n\n";
+        // Tenta extrair o total do texto
+        let match = pedidoTexto.match(/TOTAL GERAL: R\$ ([\d,.]+)/);
+        if(match) somaTotal += parseFloat(match[1].replace(",", "."));
+    });
+
+    display.textContent = textoCompleto;
+    totalDisplay.textContent = somaTotal.toFixed(2);
+});
+
+window.limparTudo = function() {
+    if(confirm("Isso apagará TODOS os pedidos e resetará o contador. Confirma?")) {
+        remove(ref(db, 'pedidosDia'));
+        set(ref(db, 'contadorCodigo'), 1);
+        alert("Banco resetado!");
+    }
+}
+</script>
+</body>
+</html>

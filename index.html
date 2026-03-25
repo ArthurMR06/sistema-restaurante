@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Gerente - Cardápio</title>
+<style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; text-align: center; }
+    .container { background: white; padding: 20px; margin: auto; width: 90%; margin-top: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
+    .coluna { display: inline-block; width: 30%; vertical-align: top; text-align: left; }
+    label { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    button { padding: 10px 20px; margin-top: 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 8px; background: linear-gradient(135deg, #6BC1FF, #42A1FF); color: white; transition: all 0.3s ease; }
+    button:hover { background: linear-gradient(135deg, #42A1FF, #1D70FF); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+    .campo-senha { position: relative; display: inline-block; }
+    .campo-senha input { padding: 8px 35px 8px 8px; width: 200px; border-radius: 6px; border: 1px solid #ccc; }
+    .olho { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px; user-select: none; }
+    footer { margin-top: 40px; padding-bottom: 20px; font-size: 14px; color: #666; }
+</style>
+</head>
+<body>
+
+<div class="container" id="loginArea">
+    <h2>Login do Gerente</h2>
+    <div class="campo-senha">
+        <input type="password" id="senha">
+        <span class="olho" onclick="toggleSenha()" id="icone">👁️</span>
+    </div>
+    <br><br>
+    <button onclick="login()">Entrar</button>
+    <p id="erro" style="color:red"></p>
+</div>
+
+<div id="sistema" class="container" style="display:none">
+    <h2>Painel do Gerente</h2>
+    <div class="coluna"> 
+        <h3>Carnes</h3> 
+        <label><input type="checkbox" class="carnes"> Churrasco</label>
+        <label><input type="checkbox" class="carnes"> Carne moída</label>
+        <label><input type="checkbox" class="carnes"> Carne seca com abóbora</label>
+        <label><input type="checkbox" class="carnes"> Estrogonofe</label>
+        <label><input type="checkbox" class="carnes"> Peixe frito</label>
+        <label><input type="checkbox" class="carnes"> Filé mignon</label>
+        <label><input type="checkbox" class="carnes"> Frango à milanesa</label> 
+    </div> 
+    <div class="coluna"> 
+        <h3>Acompanhamentos</h3> 
+        <label><input type="checkbox" class="acomp"> Arroz</label>
+        <label><input type="checkbox" class="acomp"> Feijão</label>
+        <label><input type="checkbox" class="acomp"> Batata frita</label>
+        <label><input type="checkbox" class="acomp"> Macarrão</label>
+        <label><input type="checkbox" class="acomp"> Batata assada</label>
+        <label><input type="checkbox" class="acomp"> Salada</label>
+        <label><input type="checkbox" class="acomp"> Farofa</label>
+        <label><input type="checkbox" class="acomp"> Ovo cozido</label> 
+    </div>
+    <div class="coluna">
+        <h3>Bebidas</h3>
+        <label><input type="checkbox" class="bebidas"> Coca-cola 2L - R$12</label>
+        <label><input type="checkbox" class="bebidas"> Fanta Uva 2L - R$12</label>
+        <label><input type="checkbox" class="bebidas"> Fanta Laranja 2L - R$12</label>
+        <label><input type="checkbox" class="bebidas"> Refrigerante 2L - R$12</label>
+        <label><input type="checkbox" class="bebidas"> Coca Zero 2L - R$12</label>
+        <label><input type="checkbox" class="bebidas"> Limoneto 2L - R$13</label>
+        <label><input type="checkbox" class="bebidas"> Suco - R$10</label>
+        <label><input type="checkbox" class="bebidas"> Água - R$2</label>
+        <label><input type="checkbox" class="bebidas"> Guaravita - R$2,50</label>
+        <label><input type="checkbox" class="bebidas"> Guaraviton - R$8</label>
+        <label><input type="checkbox" class="bebidas"> Coca-cola 600ml - R$8</label>
+    </div>
+    <br style="clear:both;">
+    <button onclick="salvarCardapio()">Salvar Cardápio na Nuvem</button>
+    <button onclick="window.open('funcionario.html', '_blank')">Abrir Tela do Funcionário</button>
+</div>
+
+<footer>© 2026 Arthur M. Rangel | Versão 1.0</footer>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBOPhRR_S7Awx8T6Z8_zo2DPVP1hmrHttc",
+        authDomain: "projeto-restaurante-1e87f.firebaseapp.com",
+        databaseURL: "https://projeto-restaurante-1e87f-default-rtdb.firebaseio.com",
+        projectId: "projeto-restaurante-1e87f",
+        storageBucket: "projeto-restaurante-1e87f.firebasestorage.app",
+        messagingSenderId: "723006543313",
+        appId: "1:723006543313:web:b7a50bda103b0ec607bcf0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    window.toggleSenha = function(){
+        let input = document.getElementById("senha");
+        let icone = document.getElementById("icone");
+        input.type = (input.type === "password") ? "text" : "password";
+        icone.innerText = (input.type === "password") ? "👁️" : "🚫";
+    }
+
+    window.login = function(){
+        if(document.getElementById("senha").value==="gerente123"){
+            document.getElementById("loginArea").style.display="none";
+            document.getElementById("sistema").style.display="block";
+            // Carregar estado atual do banco para os checkboxes
+            get(ref(db, 'cardapioDia')).then((snapshot) => {
+                if(snapshot.exists()) {
+                    const data = snapshot.val();
+                    marcarCheckboxes(".carnes", data.carnes);
+                    marcarCheckboxes(".acomp", data.acomp);
+                    marcarCheckboxes(".bebidas", data.bebidas);
+                }
+            });
+        }else{
+            document.getElementById("erro").innerText="Senha incorreta";
+        }
+    }
+
+    function marcarCheckboxes(classe, lista) {
+        if(!lista) return;
+        document.querySelectorAll(classe).forEach(input => {
+            if(lista.includes(input.parentElement.innerText.trim())) input.checked = true;
+        });
+    }
+
+    window.salvarCardapio = function(){
+        let carnes = Array.from(document.querySelectorAll(".carnes:checked")).map(i=>i.parentElement.innerText.trim());
+        let acomp = Array.from(document.querySelectorAll(".acomp:checked")).map(i=>i.parentElement.innerText.trim());
+        let bebidas = Array.from(document.querySelectorAll(".bebidas:checked")).map(i=>i.parentElement.innerText.trim());
+        
+        set(ref(db, 'cardapioDia'), {carnes, acomp, bebidas})
+            .then(() => alert("Cardápio sincronizado para todos os funcionários!"))
+            .catch(() => alert("Erro ao salvar no banco!"));
+    }
+</script>
+</body>
+</html>

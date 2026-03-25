@@ -7,7 +7,7 @@
     body { font-family: Arial, sans-serif; background: #f4f4f4; margin:0; padding: 20px; }
     .container { background:white; padding:20px; margin:auto; width:90%; max-width:900px; border-radius:10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
     h2, h3 { margin-top:0; color: #333; }
-    pre { background:#fafafa; padding:15px; border-radius:5px; max-height:300px; overflow:auto; border: 1px solid #ddd; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; }
+    pre { background:#fafafa; padding:15px; border-radius:5px; max-height:300px; overflow:auto; border: 1px solid #ddd; white-space: pre-wrap; word-wrap: break-word; }
     input { width: 100%; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc; box-sizing: border-box; }
     .btn { width:100%; padding:12px; margin-top:10px; font-size:16px; border:none; border-radius:5px; cursor:pointer; font-weight: bold; }
     .verde { background:#28a745; color:white; }
@@ -17,17 +17,18 @@
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
     .modal-content { background: white; padding: 20px; border-radius: 10px; width: 300px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
     .modal-edicao { width: 90%; max-width: 600px; }
-    #textoEdicao { width: 100%; height: 200px; font-family: monospace; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+    #textoEdicao { width: 100%; height: 200px; font-family: monospace; padding: 10px; box-sizing: border-box; }
     .campo-senha-modal { position: relative; display: block; margin-bottom: 15px; }
     .campo-senha-modal input { width: 100%; padding: 10px; box-sizing: border-box; padding-right: 40px; }
-    .olho-modal { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px; user-select: none; }
+    .olho-modal { position: absolute; right: 10px; top: 36%; transform: translateY(-50%); cursor: pointer; font-size: 18px; user-select: none; }
     footer { text-align: center; margin-top: 40px; padding-bottom: 20px; font-size: 14px; color: #666; }
 </style>
 </head>
 <body>
+
 <div class="container">
     <h2>📊 Fechamento de Caixa</h2>
-    <p><b>Pedidos registrados:</b></p>
+    <p><b>Pedidos registrados hoje:</b></p>
     <pre id="pedidosSalvos">Carregando...</pre>
     <label>Troco disponível (R$):</label>
     <input type="number" id="troco" value="0" step="0.01">
@@ -37,11 +38,11 @@
     <h3>🛠️ Gerenciamento</h3>
     <div style="display: flex; gap: 10px; align-items: flex-end;">
         <div style="flex: 1;">
-            <input type="number" id="codigoCancelar" placeholder="Cód. Cancelar">
+            <input type="number" id="codigoCancelar" placeholder="Cód. para Cancelar">
             <button class="btn cancelar" onclick="abrirModalSenha('cancelar')">❌ Cancelar</button>
         </div>
         <div style="flex: 1;">
-            <input type="number" id="codigoEditar" placeholder="Cód. Editar">
+            <input type="number" id="codigoEditar" placeholder="Cód. para Editar">
             <button class="btn editar" onclick="abrirModalSenha('editar')">✏️ Editar</button>
         </div>
     </div>
@@ -49,9 +50,11 @@
     <button class="btn fechamento" onclick="zerarContador()">♻️ Zerar Contador / Novo Dia</button>
     <button class="btn" style="background:#666; color:white;" onclick="window.location.href='funcionario.html'">⬅️ Voltar</button>
 </div>
+
 <div id="modalSenha" class="modal-overlay">
     <div class="modal-content">
         <h3>Acesso Restrito</h3>
+        <p>Digite a senha do gerente:</p>
         <div class="campo-senha-modal">
             <input type="password" id="senhaGerente" placeholder="Senha">
             <span class="olho-modal" id="iconeOlho" onclick="toggleSenhaModal()">👁️</span>
@@ -60,18 +63,22 @@
         <button class="btn" style="background:#bbb; color:white;" onclick="fecharModal()">Voltar</button>
     </div>
 </div>
+
 <div id="modalEdicao" class="modal-overlay">
     <div class="modal-content modal-edicao">
         <h3>✏️ Editar Pedido</h3>
         <textarea id="textoEdicao"></textarea>
-        <button class="btn verde" onclick="salvarEdicao()">Salvar</button>
+        <button class="btn verde" onclick="salvarEdicao()">Salvar Alterações</button>
         <button class="btn" style="background:#bbb; color:white;" onclick="fecharModalEdicao()">Cancelar</button>
     </div>
 </div>
+
 <footer>© 2026 Arthur M. Rangel | Versão 1.0</footer>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
 const firebaseConfig = {
     apiKey: "AIzaSyBOPhRR_S7Awx8T6Z8_zo2DPVP1hmrHttc",
     authDomain: "projeto-restaurante-1e87f.firebaseapp.com",
@@ -81,50 +88,84 @@ const firebaseConfig = {
     messagingSenderId: "723006543313",
     appId: "1:723006543313:web:b7a50bda103b0ec607bcf0"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+
 let acaoPendente = null; 
 let idFirebaseGlobal = null;
 let todosPedidosObjeto = {}; 
+
 onValue(ref(db, 'pedidosDia'), (snapshot) => {
     const data = snapshot.val();
     const display = document.getElementById('pedidosSalvos');
     const totalDisplay = document.getElementById('totalCaixa');
-    if(!data) {
-        display.textContent = "Nenhum pedido.";
+
+    if (!data) {
+        display.textContent = "Nenhum pedido registrado.";
         totalDisplay.textContent = "0.00";
         todosPedidosObjeto = {};
         return;
     }
+
     todosPedidosObjeto = data;
-    let textoCompleto = "";
-    let totalAcumulado = 0;
-    Object.values(data).forEach(pedidoTexto => {
-        textoCompleto += pedidoTexto + "\n\n-----------------------------\n\n";
-        let match = pedidoTexto.match(/TOTAL GERAL: R\$ ([\d,.]+)/);
-        if(match) totalAcumulado += parseFloat(match[1].replace(",", "."));
+    let textoAcumulado = "";
+    Object.values(data).forEach(p => {
+        textoAcumulado += p + "\n\n-----------------------------\n\n";
     });
-    display.textContent = textoCompleto;
-    totalDisplay.textContent = totalAcumulado.toFixed(2);
+    display.textContent = textoAcumulado;
+    let dadosCalculados = extrairResumoPedidos(textoAcumulado);
+    totalDisplay.textContent = dadosCalculados.totalGeral.toFixed(2);
 });
+
+function extrairResumoPedidos(texto) {
+    let totalProdutos = 0;
+    let totalFrete = 0;
+    let listaResumida = [];
+    if (!texto || texto.includes('Nenhum pedido')) return { totalGeral: 0, totalFrete: 0, totalProdutos: 0, lista: [] };
+
+    let blocos = texto.split(/CÓDIGO:/i);
+    blocos.forEach(p => {
+        if (!p.trim()) return;
+        let codMatch = p.match(/^\s*(\d+)/);
+        let totalMatch = p.match(/TOTAL:\s*R\$\s*([\d,.]+)/i);
+        let freteMatch = p.match(/FRETE:\s*R\$\s*([\d,.]+)/i);
+        if (codMatch && totalMatch) {
+            let cod = codMatch[1];
+            let vTotal = parseFloat(totalMatch[1].replace(',', '.'));
+            let vFrete = freteMatch ? parseFloat(freteMatch[1].replace(',', '.')) : 0;
+            totalProdutos += vTotal;
+            totalFrete += vFrete;
+            listaResumida.push({ cod, vTotal, vFrete });
+        }
+    });
+    return { totalGeral: totalProdutos + totalFrete, totalFrete: totalFrete, totalProdutos: totalProdutos, lista: listaResumida };
+}
+
 window.abrirModalSenha = function(tipo) {
-    let inputID = (tipo === 'cancelar') ? 'codigoCancelar' : 'codigoEditar';
-    if (!document.getElementById(inputID).value) return alert("Digite o código!");
+    let cod = (tipo === 'cancelar') ? document.getElementById('codigoCancelar').value : document.getElementById('codigoEditar').value;
+    if (!cod) return alert("Por favor, digite o código do pedido!");
     acaoPendente = tipo;
     document.getElementById('modalSenha').style.display = 'flex';
-}
-window.fecharModal = function() { document.getElementById('modalSenha').style.display = 'none'; }
+};
+
+window.fecharModal = function() { document.getElementById('modalSenha').style.display = 'none'; };
+
 window.toggleSenhaModal = function() {
     let input = document.getElementById("senhaGerente");
+    let icone = document.getElementById("iconeOlho");
     input.type = (input.type === "password") ? "text" : "password";
-}
+    icone.innerText = (input.type === "text") ? "🚫" : "👁️";
+};
+
 window.validarSenhaGerente = function() {
     if (document.getElementById('senhaGerente').value === "gerente123") {
         fecharModal();
         if (acaoPendente === 'cancelar') executarCancelamento();
         if (acaoPendente === 'editar') abrirEdicao();
-    } else { alert("Erro!"); }
-}
+    } else { alert("Senha incorreta!"); }
+};
+
 function executarCancelamento() {
     let codigoBuscado = document.getElementById('codigoCancelar').value.padStart(3, '0');
     let idParaDeletar = null;
@@ -135,9 +176,13 @@ function executarCancelamento() {
         }
     }
     if (idParaDeletar) {
-        remove(ref(db, `pedidosDia/${idParaDeletar}`)).then(() => alert("Removido!"));
+        remove(ref(db, `pedidosDia/${idParaDeletar}`)).then(() => {
+            alert("✅ Pedido cancelado!");
+            document.getElementById('codigoCancelar').value = '';
+        });
     } else { alert("Não encontrado!"); }
 }
+
 function abrirEdicao() {
     let codigoBuscado = document.getElementById('codigoEditar').value.padStart(3, '0');
     idFirebaseGlobal = null;
@@ -152,26 +197,46 @@ function abrirEdicao() {
         document.getElementById('modalEdicao').style.display = 'flex';
     } else { alert("Não encontrado!"); }
 }
-window.fecharModalEdicao = function() { document.getElementById('modalEdicao').style.display = 'none'; }
+
+window.fecharModalEdicao = function() { document.getElementById('modalEdicao').style.display = 'none'; };
+
 window.salvarEdicao = function() {
-    set(ref(db, `pedidosDia/${idFirebaseGlobal}`), document.getElementById('textoEdicao').value).then(() => {
-        alert("Salvo!");
+    const novoConteudo = document.getElementById('textoEdicao').value;
+    if(!novoConteudo.trim()) return alert("Vazio!");
+    set(ref(db, `pedidosDia/${idFirebaseGlobal}`), novoConteudo).then(() => {
+        alert("✅ Salvo!");
         fecharModalEdicao();
+        document.getElementById('codigoEditar').value = '';
     });
-}
+};
+
 window.zerarContador = function() {
     if(confirm("Zerar tudo?")){
         remove(ref(db, 'pedidosDia'));
         set(ref(db, 'contadorCodigo'), 1);
     }
-}
+};
+
 window.imprimirResumo = function() {
+    let textoPedidos = document.getElementById('pedidosSalvos').textContent;
+    let dados = extrairResumoPedidos(textoPedidos);
     let troco = document.getElementById('troco').value;
     let win = window.open('', '_blank');
-    win.document.write(`<html><body style="font-family:'Courier New';width:280px;"><center><strong>RESUMO</strong></center><hr><pre style="white-space:pre-wrap;">${document.getElementById('pedidosSalvos').textContent}</pre><hr>Troco: R$ ${parseFloat(troco).toFixed(2)}<br>TOTAL: R$ ${document.getElementById('totalCaixa').textContent}</body></html>`);
+    win.document.write(`
+        <html><body style="font-family:'Courier New';width:280px;font-size:12px;">
+            <center><strong>RESUMO DE VENDAS</strong></center><hr>
+            ${dados.lista.map(i => `<div>#${i.cod} | R$ ${i.vTotal.toFixed(2)} | R$ ${i.vFrete.toFixed(2)}</div>`).join('')}
+            <hr>
+            <div>Vendas: R$ ${dados.totalProdutos.toFixed(2)}</div>
+            <div>Fretes: R$ ${dados.totalFrete.toFixed(2)}</div>
+            <div>Troco: R$ ${parseFloat(troco).toFixed(2)}</div>
+            <hr>
+            <strong>CAIXA: R$ ${dados.totalGeral.toFixed(2)}</strong>
+        </body></html>
+    `);
     win.document.close();
     win.print();
-}
+};
 </script>
 </body>
 </html>

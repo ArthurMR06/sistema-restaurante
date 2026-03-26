@@ -1,136 +1,257 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>Gerente - Cardápio</title>
-<style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; text-align: center; }
-    .container { background: white; padding: 20px; margin: auto; width: 90%; margin-top: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
-    .coluna { display: inline-block; width: 30%; vertical-align: top; text-align: left; }
-    label { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-    button { padding: 10px 20px; margin-top: 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 8px; background: linear-gradient(135deg, #6BC1FF, #42A1FF); color: white; transition: all 0.3s ease; }
-    button:hover { background: linear-gradient(135deg, #42A1FF, #1D70FF); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-    .campo-senha { position: relative; display: inline-block; }
-    .campo-senha input { padding: 8px 35px 8px 8px; width: 200px; border-radius: 6px; border: 1px solid #ccc; }
-    .olho { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px; user-select: none; }
-    footer { margin-top: 40px; padding-bottom: 20px; font-size: 14px; color: #666; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de OS - Profissional</title>
+    <style>
+        :root {
+            --primary: #2563eb; --success: #16a34a; --warning: #ca8a04;
+            --danger: #dc2626; --dark: #1e293b; --light: #f8fafc;
+        }
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; color: var(--dark); }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+        h2 { border-bottom: 3px solid var(--primary); padding-bottom: 10px; margin-top: 0; text-align: center; }
+        
+        .nav { display: flex; gap: 10px; margin-bottom: 25px; }
+        .btn-nav { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; background: #e2e8f0; font-weight: bold; transition: 0.3s; }
+        .btn-nav.active { background: var(--primary); color: white; }
+        
+        .section { display: none; }
+        .section.active { display: block; }
+
+        .card-login { max-width: 350px; margin: 40px auto; text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background: #fff; }
+        
+        .campo-senha { position: relative; width: 100%; margin: 8px 0; }
+        .campo-senha input { width: 100%; padding: 10px 40px 10px 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .olho { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none; }
+
+        input[type="text"], textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        
+        .grid-probs { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; background: var(--light); padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #eee; }
+        .check-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; }
+        
+        .month-group { margin-top: 25px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background: #fff; }
+        .month-header { background: var(--dark); color: white; padding: 10px 15px; font-weight: bold; text-transform: uppercase; font-size: 0.9rem; }
+        .card-os { background: white; border-bottom: 1px solid #eee; padding: 15px; position: relative; }
+        
+        .status-badge { float: right; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; color: white; font-weight: bold; text-transform: uppercase; }
+        .bg-pendente { background: var(--primary); }
+        .bg-espera { background: var(--warning); }
+        .bg-resolvida { background: var(--success); }
+        
+        .time-info { font-size: 0.75rem; color: #64748b; display: block; margin-top: 4px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; color: white; margin-top: 10px; transition: 0.2s; }
+        .btn-save { background: var(--success); width: 100%; font-size: 1rem; }
+        .btn-wait { background: var(--warning); margin-right: 5px; }
+        .btn-done { background: var(--success); margin-right: 5px; }
+        .btn-del { background: var(--danger); font-size: 0.75rem; }
+        
+        footer { text-align: center; margin-top: 40px; padding-bottom: 20px; font-size: 14px; color: #666; }
+    </style>
 </head>
 <body>
 
-<div class="container" id="loginArea">
-    <h2>Login do Gerente</h2>
-    <div class="campo-senha">
-        <input type="password" id="senha">
-        <span class="olho" onclick="toggleSenha()" id="icone">👁️</span>
+<div class="container">
+    <h2>🛠️ Gestão de Chamados</h2>
+    
+    <div class="nav">
+        <button class="btn-nav active" id="tab-func">Funcionário</button>
+        <button class="btn-nav" id="tab-adm">Administração</button>
     </div>
-    <br><br>
-    <button onclick="login()">Entrar</button>
-    <p id="erro" style="color:red"></p>
+
+    <div id="sec-func" class="section active">
+        <div id="login-func" class="card-login">
+            <h3>Acesso Funcionário</h3>
+            <div class="campo-senha">
+                <input type="password" id="pass-func-in" placeholder="Senha do Funcionário">
+                <span class="olho" onclick="toggleSenha('pass-func-in', 'eye-f')" id="eye-f">👁️</span>
+            </div>
+            <button class="btn btn-save" onclick="login('func')">Entrar</button>
+        </div>
+
+        <div id="area-func" style="display:none;">
+            <input type="text" id="f-nome" placeholder="Seu Nome">
+            <p><strong>Onde é o problema?</strong></p>
+            <div class="grid-probs">
+                <label class="check-item"><input type="checkbox" class="prob" value="Roteador"> Roteador</label>
+                <label class="check-item"><input type="checkbox" class="prob" value="Sistema"> Sistema</label>
+                <label class="check-item"><input type="checkbox" class="prob" value="Erro Humano"> Erro Humano</label>
+                <label class="check-item"><input type="checkbox" id="check-outros"> Outros</label>
+            </div>
+            <input type="text" id="f-outros" placeholder="Especifique o problema" style="display:none;">
+            <textarea id="f-desc" rows="3" placeholder="Detalhes da Ordem de Serviço"></textarea>
+            <button class="btn btn-save" onclick="enviarOS()">🚀 Abrir Chamado e Notificar WhatsApp</button>
+        </div>
+    </div>
+
+    <div id="sec-adm" class="section">
+        <div id="login-adm" class="card-login">
+            <h3>Painel do Criador</h3>
+            <div class="campo-senha">
+                <input type="password" id="pass-adm-in" placeholder="Senha do ADM">
+                <span class="olho" onclick="toggleSenha('pass-adm-in', 'eye-a')" id="eye-a">👁️</span>
+            </div>
+            <button class="btn btn-save" onclick="login('adm')">Acessar Relatórios</button>
+        </div>
+
+        <div id="area-adm" style="display:none;">
+            <div id="lista-meses"></div>
+        </div>
+    </div>
 </div>
 
-<div id="sistema" class="container" style="display:none">
-    <h2>Painel do Gerente</h2>
-    <div class="coluna"> 
-        <h3>Carnes</h3> 
-        <label><input type="checkbox" class="carnes"> Churrasco</label>
-        <label><input type="checkbox" class="carnes"> Carne moída</label>
-        <label><input type="checkbox" class="carnes"> Carne seca com abóbora</label>
-        <label><input type="checkbox" class="carnes"> Estrogonofe</label>
-        <label><input type="checkbox" class="carnes"> Peixe frito</label>
-        <label><input type="checkbox" class="carnes"> Filé mignon</label>
-        <label><input type="checkbox" class="carnes"> Frango à milanesa</label> 
-    </div> 
-    <div class="coluna"> 
-        <h3>Acompanhamentos</h3> 
-        <label><input type="checkbox" class="acomp"> Arroz</label>
-        <label><input type="checkbox" class="acomp"> Feijão</label>
-        <label><input type="checkbox" class="acomp"> Batata frita</label>
-        <label><input type="checkbox" class="acomp"> Macarrão</label>
-        <label><input type="checkbox" class="acomp"> Batata assada</label>
-        <label><input type="checkbox" class="acomp"> Salada</label>
-        <label><input type="checkbox" class="acomp"> Farofa</label>
-        <label><input type="checkbox" class="acomp"> Ovo cozido</label> 
-    </div>
-    <div class="coluna">
-        <h3>Bebidas</h3>
-        <label><input type="checkbox" class="bebidas"> Coca-cola 2L - R$12</label>
-        <label><input type="checkbox" class="bebidas"> Fanta Uva 2L - R$12</label>
-        <label><input type="checkbox" class="bebidas"> Fanta Laranja 2L - R$12</label>
-        <label><input type="checkbox" class="bebidas"> Refrigerante 2L - R$12</label>
-        <label><input type="checkbox" class="bebidas"> Coca Zero 2L - R$12</label>
-        <label><input type="checkbox" class="bebidas"> Limoneto 2L - R$13</label>
-        <label><input type="checkbox" class="bebidas"> Suco - R$10</label>
-        <label><input type="checkbox" class="bebidas"> Água - R$2</label>
-        <label><input type="checkbox" class="bebidas"> Guaravita - R$2,50</label>
-        <label><input type="checkbox" class="bebidas"> Guaraviton - R$8</label>
-        <label><input type="checkbox" class="bebidas"> Coca-cola 600ml - R$8</label>
-    </div>
-    <br style="clear:both;">
-    <button onclick="salvarCardapio()">Salvar Cardápio na Nuvem</button>
-    <button onclick="window.open('funcionario.html', '_blank')">Abrir Tela do Funcionário</button>
-</div>
-
-<footer>© 2026 Arthur M. Rangel | Versão 1.0</footer>
+<footer>
+    © 2026 Arthur M. Rangel | Versão 1.0
+</footer>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
-        apiKey: "AIzaSyBOPhRR_S7Awx8T6Z8_zo2DPVP1hmrHttc",
-        authDomain: "projeto-restaurante-1e87f.firebaseapp.com",
-        databaseURL: "https://projeto-restaurante-1e87f-default-rtdb.firebaseio.com",
-        projectId: "projeto-restaurante-1e87f",
-        storageBucket: "projeto-restaurante-1e87f.firebasestorage.app",
-        messagingSenderId: "723006543313",
-        appId: "1:723006543313:web:b7a50bda103b0ec607bcf0"
+        apiKey: "AIzaSyAc8GUdZWXyBtYBzVt7zR1bpOd4V0ox2ZM",
+        authDomain: "abertura-os-8fa59.firebaseapp.com",
+        projectId: "abertura-os-8fa59",
+        storageBucket: "abertura-os-8fa59.firebasestorage.app",
+        messagingSenderId: "679824713317",
+        appId: "1:679824713317:web:12bae59ccccaf6a1ea888c"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const WHATS_CRIADOR = "5521989127567";
 
-    window.toggleSenha = function(){
-        let input = document.getElementById("senha");
-        let icone = document.getElementById("icone");
-        input.type = (input.type === "password") ? "text" : "password";
-        icone.innerText = (input.type === "password") ? "👁️" : "🚫";
-    }
-
-    window.login = function(){
-        if(document.getElementById("senha").value==="gerente123"){
-            document.getElementById("loginArea").style.display="none";
-            document.getElementById("sistema").style.display="block";
-            // Carregar estado atual do banco para os checkboxes
-            get(ref(db, 'cardapioDia')).then((snapshot) => {
-                if(snapshot.exists()) {
-                    const data = snapshot.val();
-                    marcarCheckboxes(".carnes", data.carnes);
-                    marcarCheckboxes(".acomp", data.acomp);
-                    marcarCheckboxes(".bebidas", data.bebidas);
-                }
-            });
-        }else{
-            document.getElementById("erro").innerText="Senha incorreta";
+    // --- FUNÇÕES GLOBAIS ---
+    
+    window.toggleSenha = function(idInput, idIcone) {
+        let input = document.getElementById(idInput);
+        let icone = document.getElementById(idIcone);
+        if (input.type === "password") {
+            input.type = "text";
+            icone.innerText = "🚫";
+        } else {
+            input.type = "password";
+            icone.innerText = "👁️";
         }
-    }
+    };
 
-    function marcarCheckboxes(classe, lista) {
-        if(!lista) return;
-        document.querySelectorAll(classe).forEach(input => {
-            if(lista.includes(input.parentElement.innerText.trim())) input.checked = true;
-        });
-    }
+    window.login = function(tipo) {
+        const pass = document.getElementById(tipo === 'func' ? 'pass-func-in' : 'pass-adm-in').value;
+        const correta = (tipo === 'func') ? "funcionario123" : "admin";
+        if(pass === correta) {
+            document.getElementById(`login-${tipo}`).style.display = 'none';
+            document.getElementById(`area-${tipo}`).style.display = 'block';
+        } else { alert("Senha incorreta!"); }
+    };
 
-    window.salvarCardapio = function(){
-        let carnes = Array.from(document.querySelectorAll(".carnes:checked")).map(i=>i.parentElement.innerText.trim());
-        let acomp = Array.from(document.querySelectorAll(".acomp:checked")).map(i=>i.parentElement.innerText.trim());
-        let bebidas = Array.from(document.querySelectorAll(".bebidas:checked")).map(i=>i.parentElement.innerText.trim());
+    window.toggleSec = function(t) {
+        document.querySelectorAll('.btn-nav').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(`tab-${t}`).classList.add('active');
+        document.getElementById(`sec-${t}`).classList.add('active');
+    };
+
+    document.getElementById('tab-func').onclick = () => toggleSec('func');
+    document.getElementById('tab-adm').onclick = () => toggleSec('adm');
+
+    document.getElementById('check-outros').onchange = (e) => {
+        document.getElementById('f-outros').style.display = e.target.checked ? 'block' : 'none';
+    };
+
+    window.enviarOS = function() {
+        const nome = document.getElementById('f-nome').value;
+        const desc = document.getElementById('f-desc').value;
+        let selecionados = Array.from(document.querySelectorAll('.prob:checked')).map(c => c.value);
         
-        set(ref(db, 'cardapioDia'), {carnes, acomp, bebidas})
-            .then(() => alert("Cardápio sincronizado para todos os funcionários!"))
-            .catch(() => alert("Erro ao salvar no banco!"));
-    }
+        if(document.getElementById('check-outros').checked) {
+            let outros = document.getElementById('f-outros').value;
+            if(outros) selecionados.push("Outros: " + outros);
+        }
+
+        if(!nome || selecionados.length === 0) {
+            alert("Por favor, preencha seu nome e selecione pelo menos um problema.");
+            return;
+        }
+
+        const agora = new Date();
+        const novaOS = {
+            funcionario: nome,
+            problemas: selecionados.join(", "),
+            descricao: desc || "Sem observações",
+            status: "Pendente",
+            criado_em: agora.toLocaleString('pt-BR'),
+            mes_ref: agora.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }),
+            resolvida_em: ""
+        };
+
+        push(ref(db, 'chamados'), novaOS).then(() => {
+            const textoZap = `*NOVA OS* %0A*De:* ${novaOS.funcionario} %0A*Problemas:* ${novaOS.problemas} %0A*Data:* ${novaOS.criado_em}`;
+            window.open(`https://api.whatsapp.com/send?phone=${WHATS_CRIADOR}&text=${textoZap}`, '_blank');
+            
+            // Limpa formulário
+            document.getElementById('f-nome').value = "";
+            document.getElementById('f-desc').value = "";
+            document.querySelectorAll('.prob').forEach(c => c.checked = false);
+            document.getElementById('check-outros').checked = false;
+            document.getElementById('f-outros').style.display = 'none';
+            
+            alert("Chamado aberto com sucesso!");
+        }).catch(err => alert("Erro ao salvar: " + err));
+    };
+
+    // --- FUNÇÕES DE ADMIN ---
+
+    window.mudarStatus = (id, novoStatus) => {
+        const dados = { status: novoStatus };
+        if(novoStatus === 'Resolvida') dados.resolvida_em = new Date().toLocaleString('pt-BR');
+        update(ref(db, `chamados/${id}`), dados);
+    };
+
+    window.excluir = (id) => {
+        if(confirm("Tem certeza que deseja apagar?")) remove(ref(db, `chamados/${id}`));
+    };
+
+    onValue(ref(db, 'chamados'), (snapshot) => {
+        const container = document.getElementById('lista-meses');
+        container.innerHTML = "";
+        if(!snapshot.exists()) {
+            container.innerHTML = "<p style='text-align:center'>Nenhum chamado aberto.</p>";
+            return;
+        }
+
+        const dados = snapshot.val();
+        const meses = {};
+
+        Object.keys(dados).forEach(id => {
+            const os = dados[id];
+            if(!meses[os.mes_ref]) meses[os.mes_ref] = [];
+            meses[os.mes_ref].push({id, ...os});
+        });
+
+        Object.keys(meses).reverse().forEach(mes => {
+            let html = `<div class="month-group"><div class="month-header">${mes}</div>`;
+            meses[mes].reverse().forEach(os => {
+                const badgeClass = `bg-${os.status.toLowerCase().replace(" ", "")}`;
+                html += `
+                    <div class="card-os">
+                        <span class="status-badge ${badgeClass}">${os.status}</span>
+                        <strong>${os.funcionario}</strong>
+                        <p style="margin:5px 0"><b>Problemas:</b> ${os.problemas}<br><small>${os.descricao}</small></p>
+                        <span class="time-info">📅 Aberta: ${os.criado_em}</span>
+                        ${os.resolvida_em ? `<span class="time-info" style="color:var(--success)">✅ Resolvida: ${os.resolvida_em}</span>` : ''}
+                        <div class="btn-group">
+                            <button onclick="mudarStatus('${os.id}', 'Em Espera')" class="btn btn-wait">Em Espera</button>
+                            <button onclick="mudarStatus('${os.id}', 'Resolvida')" class="btn btn-done">Resolver</button>
+                            <button onclick="excluir('${os.id}')" class="btn btn-del">Excluir</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            container.innerHTML += html;
+        });
+    });
 </script>
 </body>
 </html>

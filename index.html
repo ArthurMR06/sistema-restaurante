@@ -84,7 +84,7 @@
                 <input type="number" id="novo-preco" step="0.01" placeholder="0.00">
             </div>
             <div class="campo-grupo">
-                <label>Valor adicional (R$)</label>
+                <label>adicional:</label>
                 <input type="number" id="novo-adicional" step="0.01" placeholder="0.00">
             </div>
             <div class="campo-grupo">
@@ -212,11 +212,17 @@
             return;
         }
 
-        if(!adicional) adicional = "0.00";
+        // Define como 0.00 caso nada seja colocado ou o campo esteja vazio
+        if(adicional === "" || adicional === null) {
+            adicional = "0.00";
+        } else {
+            // Garante que o número tenha duas casas decimais se for preenchido
+            adicional = parseFloat(adicional).toFixed(2);
+        }
         
         if(senha === SENHA_MESTRA) {
             await update(ref(db, `produtos/${tipo}`), {
-                [nome]: { valor: preco, obs: adicional }
+                [nome]: { valor: parseFloat(preco).toFixed(2), obs: adicional }
             });
             alert("Produto cadastrado!");
             window.fecharFormulario();

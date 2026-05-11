@@ -74,7 +74,7 @@
     </div>
 </div>
 
-<footer>© 2026 Arthur M. Rangel | Versão 1.0</footer>
+<footer>© 2026 Arthur M. Rangel | Versão 1.1</footer>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -123,25 +123,32 @@ onValue(ref(db, 'pedidosDia'), (snapshot) => {
 function extrairResumoPedidos(texto) {
     let totalProdutos = 0;
     let totalFrete = 0;
+    let qtdMarmitas = 0;
+    let qtdPF = 0;
     let listaResumida = [];
-    if (!texto || texto.includes('Nenhum pedido')) return { totalGeral: 0, totalFrete: 0, totalProdutos: 0, lista: [] };
+    if (!texto || texto.includes('Nenhum pedido')) return { totalGeral: 0, totalFrete: 0, totalProdutos: 0, lista: [], qtdMarmitas: 0, qtdPF: 0 };
 
-    let blocos = texto.split(/CÓDIGO:/i);
+    let blocos = texto.split(/-----------------------------/i);
     blocos.forEach(p => {
         if (!p.trim()) return;
-        let codMatch = p.match(/^\s*(\d+)/);
-        let totalMatch = p.match(/TOTAL:\s*R\$\s*([\d,.]+)/i);
-        let freteMatch = p.match(/FRETE:\s*R\$\s*([\d,.]+)/i);
+        
+        if (p.toUpperCase().includes("MARMITA")) qtdMarmitas++;
+        if (p.toUpperCase().includes("PRATO FEITO")) qtdPF++;
+
+        let codMatch = p.match(/CÓDIGO:\s*(\d+)/i) || p.match(/🆔\s*\*Nº\s*(\d+)\*/i);
+        let totalMatch = p.match(/TOTAL:\s*R\$\s*([\d,.]+)/i) || p.match(/💰\s*\*Subtotal:\*\s*R\$\s*([\d,.]+)/i);
+        let freteMatch = p.match(/FRETE:\s*R\$\s*([\d,.]+)/i) || p.match(/🛵\s*\*FRETE:\*\s*R\$\s*([\d,.]+)/i);
+        
         if (codMatch && totalMatch) {
-            let cod = codMatch[1];
-            let vTotal = parseFloat(totalMatch[1].replace(',', '.'));
-            let vFrete = freteMatch ? parseFloat(freteMatch[1].replace(',', '.')) : 0;
+            let cod = codMatch;
+            let vTotal = parseFloat(totalMatch.replace(',', '.'));
+            let vFrete = freteMatch ? parseFloat(freteMatch.replace(',', '.')) : 0;
             totalProdutos += vTotal;
             totalFrete += vFrete;
             listaResumida.push({ cod, vTotal, vFrete });
         }
     });
-    return { totalGeral: totalProdutos + totalFrete, totalFrete: totalFrete, totalProdutos: totalProdutos, lista: listaResumida };
+    return { totalGeral: totalProdutos + totalFrete, totalFrete: totalFrete, totalProdutos: totalProdutos, lista: listaResumida, qtdMarmitas, qtdPF };
 }
 
 window.abrirModalSenha = function(tipo) {
@@ -182,7 +189,7 @@ function executarCancelamento() {
     let codigoBuscado = document.getElementById('codigoCancelar').value.padStart(3, '0');
     let idParaDeletar = null;
     for (let id in todosPedidosObjeto) {
-        if (todosPedidosObjeto[id].includes("CÓDIGO: " + codigoBuscado)) {
+        if (todosPedidosObjeto[id].includes("CÓDIGO: " + codigoBuscado) || todosPedidosObjeto[id].includes("Nº " + codigoBuscado)) {
             idParaDeletar = id;
             break;
         }
@@ -199,7 +206,7 @@ function abrirEdicao() {
     let codigoBuscado = document.getElementById('codigoEditar').value.padStart(3, '0');
     idFirebaseGlobal = null;
     for (let id in todosPedidosObjeto) {
-        if (todosPedidosObjeto[id].includes("CÓDIGO: " + codigoBuscado)) {
+        if (todosPedidosObjeto[id].includes("CÓDIGO: " + codigoBuscado) || todosPedidosObjeto[id].includes("Nº " + codigoBuscado)) {
             idFirebaseGlobal = id;
             break;
         }
@@ -267,6 +274,9 @@ window.imprimirResumo = function() {
     });
 
     win.document.write(`
+            <div class="separador"></div>
+            <div class="item"><span>Marmitas:</span> <span>${dados.qtdMarmitas}</span></div>
+            <div class="item"><span>Pratos Feitos:</span> <span>${dados.qtdPF}</span></div>
             <div class="separador"></div>
             <div class="item"><span>Total Vendas:</span> <span>R$ ${dados.totalProdutos.toFixed(2)}</span></div>
             <div class="item"><span>Total Fretes:</span> <span>R$ ${dados.totalFrete.toFixed(2)}</span></div>

@@ -16,7 +16,7 @@
             display: none; background: #f9f9f9; border: 2px solid #42A1FF; 
             padding: 20px; border-radius: 10px; margin: 20px auto; max-width: 600px; text-align: left;
         }
-        .campo-grupo { margin-bottom: 15px; }
+        .campo-grupo { margin-bottom: 15px; position: relative; }
         .campo-grupo label { display: block; font-weight: bold; margin-bottom: 5px; border: none; padding: 0; }
         .campo-grupo input, .campo-grupo select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
         .controles { margin-top: 30px; }
@@ -25,8 +25,23 @@
         .btn-confirmar { background: #2ecc71; }
         .btn-cancelar { background: #95a5a6; }
         .btn-danger { background: #e74c3c; }
-        .senha-container { position: relative; }
-        .olho-btn { position: absolute; right: 10px; top: 38px; cursor: pointer; font-size: 18px; }
+        
+        .senha-container { position: relative; display: inline-block; width: 100%; }
+        
+        .olho-btn {
+            position: absolute;
+            right: -15px;
+            top: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            user-select: none;
+        }
+
+        .campo-grupo .olho-btn {
+            right: 6px;
+            top: 31px; 
+        }
+
         footer { margin-top: 40px; color: #888; font-size: 13px; }
     </style>
 </head>
@@ -34,11 +49,11 @@
 
 <div class="container" id="loginArea">
     <h2>🔑 Login do Gerente</h2>
-    <div class="senha-container" style="max-width: 300px; margin: auto;">
+    <div class="senha-container" style="max-width: 250px; margin: auto;">
         <input type="password" id="senha" placeholder="Senha" style="width:100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
         <span class="olho-btn" onclick="toggleSenha('senha', 'iconeLogin')" id="iconeLogin">👁️</span>
     </div>
-    <br>
+    <br><br>
     <button onclick="login()">Entrar no Sistema</button>
     <p id="erro" style="color:red"></p>
 </div>
@@ -69,10 +84,10 @@
                 <input type="number" id="novo-preco" step="0.01" placeholder="0.00">
             </div>
             <div class="campo-grupo">
-                <label>Adicional/Obs</label>
-                <input type="text" id="novo-obs" placeholder="Ex: Com limão">
+                <label>Valor adicional (R$)</label>
+                <input type="number" id="novo-obs" step="0.01" placeholder="0.00">
             </div>
-            <div class="campo-grupo senha-container">
+            <div class="campo-grupo">
                 <label>Confirmar Senha</label>
                 <input type="password" id="senha-confirmacao">
                 <span class="olho-btn" onclick="toggleSenha('senha-confirmacao', 'iconeConf')" id="iconeConf">👁️</span>
@@ -134,7 +149,8 @@
     };
 
     window.login = () => {
-        if(document.getElementById("senha").value === SENHA_MESTRA){
+        const senhaDigitada = document.getElementById("senha").value;
+        if(senhaDigitada === SENHA_MESTRA){
             document.getElementById("loginArea").style.display="none";
             document.getElementById("sistema").style.display="block";
             carregarDadosIniciais();
@@ -150,15 +166,11 @@
 
     window.fecharFormulario = () => {
         document.getElementById("form-produto").style.display = "none";
-        limparCampos();
-    };
-
-    function limparCampos() {
         document.getElementById("novo-nome").value = "";
         document.getElementById("novo-preco").value = "";
         document.getElementById("novo-obs").value = "";
         document.getElementById("senha-confirmacao").value = "";
-    }
+    };
 
     async function carregarDadosIniciais() {
         const snapProdutos = await get(ref(db, 'produtos'));
@@ -183,7 +195,7 @@
             div.innerHTML += `
                 <label>
                     <input type="checkbox" class="${tipo}" data-nome="${nome}" ${isChecked}> 
-                    <span><strong>${nome}</strong> <br> <small>R$ ${item.valor} ${item.obs ? '| ' + item.obs : ''}</small></span>
+                    <span><strong>${nome}</strong> <br> <small>Preço: R$ ${item.valor} | Adicional: R$ ${item.obs || '0.00'}</small></span>
                 </label>`;
         });
     }
@@ -192,17 +204,22 @@
         const nome = document.getElementById("novo-nome").value;
         const tipo = document.getElementById("novo-tipo").value;
         const preco = document.getElementById("novo-preco").value;
-        const obs = document.getElementById("novo-obs").value;
+        let obs = document.getElementById("novo-obs").value;
         const senha = document.getElementById("senha-confirmacao").value;
 
-        if(!nome || !preco) return alert("Preencha o nome e o preço!");
+        if(!nome || !preco) {
+            alert("Preencha o nome e o preço!");
+            return;
+        }
+
+        if(!obs) obs = "0.00";
         
         if(senha === SENHA_MESTRA) {
             await update(ref(db, `produtos/${tipo}`), {
                 [nome]: { valor: preco, obs: obs }
             });
             alert("Produto cadastrado!");
-            fecharFormulario();
+            window.fecharFormulario();
             carregarDadosIniciais();
         } else {
             alert("Senha de gerente incorreta!");
@@ -222,7 +239,10 @@
 
     window.excluirItens = async function() {
         const selecionados = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'));
-        if(selecionados.length === 0) return alert("Selecione itens para excluir.");
+        if(selecionados.length === 0) {
+            alert("Selecione itens para excluir.");
+            return;
+        }
 
         const senha = prompt(`Deseja excluir permanentemente ${selecionados.length} item(s)? Confirme sua senha:`);
         
@@ -233,6 +253,7 @@
                 await set(ref(db, `produtos/${cat}/${nome}`), null);
             }
             carregarDadosIniciais();
+            alert("Itens excluídos com sucesso.");
         } else {
             alert("Senha incorreta.");
         }

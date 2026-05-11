@@ -74,7 +74,7 @@
     </div>
 </div>
 
-<footer>© 2026 Arthur M. Rangel | Versão 1.1</footer>
+<footer>© 2026 Arthur M. Rangel | Versão 1.2</footer>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -128,21 +128,23 @@ function extrairResumoPedidos(texto) {
     let listaResumida = [];
     if (!texto || texto.includes('Nenhum pedido')) return { totalGeral: 0, totalFrete: 0, totalProdutos: 0, lista: [], qtdMarmitas: 0, qtdPF: 0 };
 
-    let blocos = texto.split(/-----------------------------/i);
+    let blocos = texto.split(/(?=CÓDIGO:|🆔\s*\*Nº)/i);
     blocos.forEach(p => {
         if (!p.trim()) return;
         
-        if (p.toUpperCase().includes("MARMITA")) qtdMarmitas++;
-        if (p.toUpperCase().includes("PRATO FEITO")) qtdPF++;
+        const textoUpperCase = p.toUpperCase();
+        if (textoUpperCase.includes("MARMITA")) qtdMarmitas++;
+        if (textoUpperCase.includes("PRATO FEITO")) qtdPF++;
 
-        let codMatch = p.match(/CÓDIGO:\s*(\d+)/i) || p.match(/🆔\s*\*Nº\s*(\d+)\*/i);
-        let totalMatch = p.match(/TOTAL:\s*R\$\s*([\d,.]+)/i) || p.match(/💰\s*\*Subtotal:\*\s*R\$\s*([\d,.]+)/i);
-        let freteMatch = p.match(/FRETE:\s*R\$\s*([\d,.]+)/i) || p.match(/🛵\s*\*FRETE:\*\s*R\$\s*([\d,.]+)/i);
+        let codMatch = p.match(/(?:CÓDIGO:|Nº)\s*\*?(\d+)/i);
+        let totalMatch = p.match(/(?:TOTAL:|Subtotal:|TOTAL GERAL:)\s*R\$\s*([\d,.]+)/i);
+        let freteMatch = p.match(/FRETE:\s*R\$\s*([\d,.]+)/i);
         
         if (codMatch && totalMatch) {
             let cod = codMatch;
             let vTotal = parseFloat(totalMatch.replace(',', '.'));
             let vFrete = freteMatch ? parseFloat(freteMatch.replace(',', '.')) : 0;
+            
             totalProdutos += vTotal;
             totalFrete += vFrete;
             listaResumida.push({ cod, vTotal, vFrete });
@@ -239,15 +241,21 @@ window.zerarContador = function() {
 window.imprimirResumo = function() {
     let pedidos = document.getElementById('pedidosSalvos').textContent;
     let dados = extrairResumoPedidos(pedidos);
-    let troco = document.getElementById('troco').value;
+    let trocoVal = document.getElementById('troco').value;
+    let troco = parseFloat(trocoVal || 0);
     let data = new Date().toLocaleString('pt-BR');
     
     let win = window.open('', '_blank');
+    if (!win) {
+        alert("Pop-up bloqueado! Por favor, autorize pop-ups para imprimir.");
+        return;
+    }
+
     win.document.write(`
         <html>
         <head>
             <style>
-                body { font-family: 'Courier New', Courier, monospace; width: 280px; font-size: 12px; }
+                body { font-family: 'Courier New', Courier, monospace; width: 280px; font-size: 12px; margin: 10px; }
                 .centralizado { text-align: center; }
                 .separador { border-top: 1px dashed #000; margin: 5px 0; }
                 .item { display: flex; justify-content: space-between; }
@@ -278,18 +286,19 @@ window.imprimirResumo = function() {
             <div class="item"><span>Marmitas:</span> <span>${dados.qtdMarmitas}</span></div>
             <div class="item"><span>Pratos Feitos:</span> <span>${dados.qtdPF}</span></div>
             <div class="separador"></div>
-            <div class="item"><span>Total Vendas:</span> <span>R$ ${dados.totalProdutos.toFixed(2)}</span></div>
+            <div class="item"><span>Subtotal Vendas:</span> <span>R$ ${dados.totalProdutos.toFixed(2)}</span></div>
             <div class="item"><span>Total Fretes:</span> <span>R$ ${dados.totalFrete.toFixed(2)}</span></div>
-            <div class="item"><span>Troco Informado:</span> <span>R$ ${parseFloat(troco).toFixed(2)}</span></div>
+            <div class="item"><span>Troco em Fundo:</span> <span>R$ ${troco.toFixed(2)}</span></div>
             <div class="separador"></div>
-            <div class="item" style="font-size: 14px;"><strong>VALOR EM CAIXA:</strong> <strong>R$ ${dados.totalGeral.toFixed(2)}</strong></div>
+            <div class="item" style="font-size: 14px;"><strong>VALOR EM CAIXA:</strong> <strong>R$ ${(dados.totalGeral + troco).toFixed(2)}</strong></div>
             <div class="separador"></div>
-            <div class="centralizado"><br>.</div>
+            <div class="centralizado"><br>Assinatura Gerente:<br>__________________________</div>
         </body>
         </html>
     `);
     win.document.close();
-    win.print();
+    win.focus();
+    setTimeout(() => { win.print(); win.close(); }, 500);
 };
 </script>
 </body>

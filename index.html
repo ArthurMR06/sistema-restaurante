@@ -79,15 +79,11 @@
         </div>
 
         <div class="grid-colunas" style="margin-top:0">
-            <div class="campo-grupo">
-                <label>Preço (R$)</label>
-                <input type="number" id="novo-preco" step="0.01" placeholder="0.00">
-            </div>
-            <div class="campo-grupo">
+            <div class="campo-grupo" style="flex:1">
                 <label>adicional:</label>
                 <input type="number" id="novo-adicional" step="0.01" placeholder="0.00">
             </div>
-            <div class="campo-grupo">
+            <div class="campo-grupo" style="flex:1">
                 <label>Confirmar Senha</label>
                 <input type="password" id="senha-confirmacao">
                 <span class="olho-btn" onclick="toggleSenha('senha-confirmacao', 'iconeConf')" id="iconeConf">👁️</span>
@@ -167,7 +163,6 @@
     window.fecharFormulario = () => {
         document.getElementById("form-produto").style.display = "none";
         document.getElementById("novo-nome").value = "";
-        document.getElementById("novo-preco").value = "";
         document.getElementById("novo-adicional").value = "";
         document.getElementById("senha-confirmacao").value = "";
     };
@@ -195,7 +190,7 @@
             div.innerHTML += `
                 <label>
                     <input type="checkbox" class="${tipo}" data-nome="${nome}" ${isChecked}> 
-                    <span><strong>${nome}</strong> <br> <small>Preço: R$ ${item.valor} | Adicional: R$ ${item.obs || '0.00'}</small></span>
+                    <span><strong>${nome}</strong> <br> <small>Adicional: R$ ${item.obs || '0.00'}</small></span>
                 </label>`;
         });
     }
@@ -203,26 +198,24 @@
     window.confirmarAdicao = async function() {
         const nome = document.getElementById("novo-nome").value;
         const tipo = document.getElementById("novo-tipo").value;
-        const preco = document.getElementById("novo-preco").value;
         let adicional = document.getElementById("novo-adicional").value;
         const senha = document.getElementById("senha-confirmacao").value;
 
-        if(!nome || !preco) {
-            alert("Preencha o nome e o preço!");
+        if(!nome) {
+            alert("Preencha o nome do produto!");
             return;
         }
 
-        // Define como 0.00 caso nada seja colocado ou o campo esteja vazio
+        // Caso nada seja colocado, define para 0.00
         if(adicional === "" || adicional === null) {
             adicional = "0.00";
         } else {
-            // Garante que o número tenha duas casas decimais se for preenchido
             adicional = parseFloat(adicional).toFixed(2);
         }
         
         if(senha === SENHA_MESTRA) {
             await update(ref(db, `produtos/${tipo}`), {
-                [nome]: { valor: parseFloat(preco).toFixed(2), obs: adicional }
+                [nome]: { obs: adicional }
             });
             alert("Produto cadastrado!");
             window.fecharFormulario();

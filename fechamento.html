@@ -74,7 +74,7 @@
     </div>
 </div>
 
-<footer>© 2026 Arthur M. Rangel | Versão 1.2</footer>
+<footer>© 2026 Arthur M. Rangel | Versão 1.3</footer>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -126,9 +126,13 @@ function extrairResumoPedidos(texto) {
     let qtdMarmitas = 0;
     let qtdPF = 0;
     let listaResumida = [];
-    if (!texto || texto.includes('Nenhum pedido')) return { totalGeral: 0, totalFrete: 0, totalProdutos: 0, lista: [], qtdMarmitas: 0, qtdPF: 0 };
+    
+    if (!texto || texto.includes('Nenhum pedido')) {
+        return { totalGeral: 0, totalFrete: 0, totalProdutos: 0, lista: [], qtdMarmitas: 0, qtdPF: 0 };
+    }
 
     let blocos = texto.split(/(?=CÓDIGO:|🆔\s*\*Nº)/i);
+    
     blocos.forEach(p => {
         if (!p.trim()) return;
         
@@ -150,7 +154,15 @@ function extrairResumoPedidos(texto) {
             listaResumida.push({ cod, vTotal, vFrete });
         }
     });
-    return { totalGeral: totalProdutos + totalFrete, totalFrete: totalFrete, totalProdutos: totalProdutos, lista: listaResumida, qtdMarmitas, qtdPF };
+    
+    return { 
+        totalGeral: totalProdutos + totalFrete, 
+        totalFrete: totalFrete, 
+        totalProdutos: totalProdutos, 
+        lista: listaResumida, 
+        qtdMarmitas, 
+        qtdPF 
+    };
 }
 
 window.abrirModalSenha = function(tipo) {
@@ -298,7 +310,10 @@ window.imprimirResumo = function() {
     `);
     win.document.close();
     win.focus();
-    setTimeout(() => { win.print(); win.close(); }, 500);
+    setTimeout(() => { 
+        win.print(); 
+        win.close(); 
+    }, 500);
 };
 </script>
 </body>

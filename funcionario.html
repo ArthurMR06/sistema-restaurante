@@ -6,7 +6,7 @@
 <style>
   body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; }
   .container { background: white; padding: 20px; margin: auto; width: 90%; max-width: 900px; margin-top: 20px; border-radius: 10px; }
-  input[type="text"], input[type="number"], select { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc; }
+  input[type="text"], input[type="number"], select { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
   .top-inputs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
   .top-inputs input, .top-inputs select { flex: 1 1 200px; }
   .contador-pedidos { font-weight: bold; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
@@ -25,6 +25,8 @@
   .verde { background: #28a745; color: white; }
   .azul { background: #007bff; color: white; }
   .laranja { background: #ff9800; color: white; }
+  .opcao-modalidade { display: flex; gap: 15px; margin-bottom: 15px; background: #eee; padding: 10px; border-radius: 5px; }
+  .secao-marmita, .secao-pf { border-left: 3px solid #007bff; padding-left: 10px; margin-bottom: 15px; }
   #printArea { display: none; }
   @media print {
     body * { visibility: hidden; }
@@ -49,7 +51,7 @@
   <input type="text" id="valorFrete" value="R$ 0,00" placeholder="Valor do frete" />
 </div>
 <div class="contador-pedidos">
-  <label>Quantidade de marmitas:</label>
+  <label>Quantidade de pedidos:</label>
   <button id="menos">-</button>
   <span id="quantidade">1</span>
   <button id="mais">+</button>
@@ -63,7 +65,7 @@
 <div id="printArea"></div>
 
 <footer>
-    © 2026 Arthur M. Rangel  |  Versão 1.0
+    © 2026 Arthur M. Rangel  |  Versão 1.1
 </footer>
 
 <script type="module">
@@ -89,6 +91,7 @@ const qtdSpan = document.getElementById('quantidade');
 window.quantidade = 1;
 window.contadorCodigo = 1;
 window.cardapio = {carnes:[], acomp:[], bebidas:[]};
+const PRECO_GRAMA = 0.087;
 
 onValue(ref(db, 'cardapioDia'), (snapshot) => {
     if(snapshot.exists()) window.cardapio = snapshot.val();
@@ -112,6 +115,20 @@ function obterValorFrete() {
   return parseFloat(v) || 0;
 }
 
+window.alternarModalidade = function(index) {
+    const modalidade = document.querySelector(`input[name="modalidade_${index}"]:checked`).value;
+    const secaoMarmita = document.getElementById(`secao_marmita_${index}`);
+    const secaoPF = document.getElementById(`secao_pf_${index}`);
+    
+    if(modalidade === "Marmita") {
+        secaoMarmita.style.display = "block";
+        secaoPF.style.display = "none";
+    } else {
+        secaoMarmita.style.display = "none";
+        secaoPF.style.display = "block";
+    }
+}
+
 function criarPedidoForm(index) {
   const pedidoDiv = document.createElement('div');
   pedidoDiv.className = 'pedido';
@@ -129,16 +146,30 @@ function criarPedidoForm(index) {
 
   pedidoDiv.innerHTML = `
     <h3>Pedido ${String(index + window.contadorCodigo).padStart(3, '0')}</h3>
-    <div class="pedidoBox">
+    
+    <div class="opcao-modalidade">
+        <b>Modalidade:</b>
+        <label><input type="radio" name="modalidade_${index}" value="Marmita" checked onclick="alternarModalidade(${index})"> Marmita</label>
+        <label><input type="radio" name="modalidade_${index}" value="Prato Feito" onclick="alternarModalidade(${index})"> Prato Feito (G)</label>
+    </div>
+
+    <div id="secao_marmita_${index}" class="secao-marmita">
       <b>Tamanho da Marmita:</b>
       <label><input type="radio" name="tamanho_${index}" value="Pequena" /> <span>Pequena</span> <span class="price">R$13</span></label>
       <label><input type="radio" name="tamanho_${index}" value="Média" /> <span>Média</span> <span class="price">R$16</span></label>
       <label><input type="radio" name="tamanho_${index}" value="Grande" /> <span>Grande</span> <span class="price">R$20</span></label>
     </div>
+
+    <div id="secao_pf_${index}" class="secao-pf" style="display:none;">
+      <b>Peso do Prato (Gramas):</b>
+      <input type="number" id="peso_${index}" placeholder="Ex: 500" style="width:150px;" />
+      <small>(Preço: R$ 87,00/kg ou R$ 0,087/g)</small>
+    </div>
+
     <div class="row">
       <div class="coluna"><b>Carnes:</b>${criarInputs("carne", window.cardapio.carnes)}</div>
       <div class="coluna"><b>Acompanhamentos (máx 5):</b>${criarInputs("acomp", window.cardapio.acomp, "checkbox", 5)}</div>
-      <div class="coluna"><b>Bebidas:</b>${criarInputs("bebida", window.cardapio.bebidas, "checkbox")}</div>
+      <div class="coluna"><b>Bebidas (Múltiplas):</b>${criarInputs("bebida", window.cardapio.bebidas, "checkbox")}</div>
     </div>
     <div style="margin-top:10px;">
       <b>Observação:</b>
@@ -166,11 +197,11 @@ window.limiteAcompanhamento = function(idx) {
 
 window.montarPedido = function(isWhats = false) {
   let nome = document.getElementById("nomeCliente").value.trim();
-  let telefone = document.getElementById("telefoneCliente").value.trim();
   let endereco = document.getElementById("enderecoCliente").value.trim();
   let ponto = document.getElementById("pontoReferencia").value.trim();
   let freteSelecionado = document.getElementById("temFrete").value === "sim";
   let valorFrete = obterValorFrete();
+  
   if (!nome || !endereco) { alert("Preencha nome e endereço"); return null; }
   
   let texto = isWhats ? "*NOVO PEDIDO* 🍱\n\n" : "";
@@ -178,24 +209,34 @@ window.montarPedido = function(isWhats = false) {
   
   for (let i = 0; i < window.quantidade; i++) {
     let codigo = String(window.contadorCodigo + i).padStart(3, '0');
-    let tamanho = document.querySelector(`input[name="tamanho_${i}"]:checked`);
+    let modalidade = document.querySelector(`input[name="modalidade_${i}"]:checked`).value;
     let carne = document.querySelector(`input[name="carne_${i}"]:checked`);
     let acompElems = document.querySelectorAll(`.acomp[data-index="${i}"]:checked`);
     let bebidasElems = document.querySelectorAll(`.bebida[data-index="${i}"]:checked`);
     let obs = document.getElementById(`obs_${i}`).value.trim();
     
-    if (!tamanho || !carne) { alert(`Preencha todos os campos do pedido ${codigo}`); return null; }
+    if (!carne) { alert(`Selecione a carne do pedido ${codigo}`); return null; }
     
-    let acomp = Array.from(acompElems).map(a => a.value);
-    let bebidas = Array.from(bebidasElems).map(b => b.value);
     let total = 0;
-    
-    if (tamanho.value == "Pequena") total += 13;
-    else if (tamanho.value == "Média") total += 16;
-    else total += 20;
+    let detalheTamanhoPeso = "";
+
+    if(modalidade === "Marmita") {
+        let tamanho = document.querySelector(`input[name="tamanho_${i}"]:checked`);
+        if (!tamanho) { alert(`Selecione o tamanho da marmita ${codigo}`); return null; }
+        detalheTamanhoPeso = `Marmita (${tamanho.value})`;
+        if (tamanho.value == "Pequena") total += 13;
+        else if (tamanho.value == "Média") total += 16;
+        else total += 20;
+    } else {
+        let pesoGrama = document.getElementById(`peso_${i}`).value;
+        if (!pesoGrama || pesoGrama <= 0) { alert(`Informe o peso em gramas do pedido ${codigo}`); return null; }
+        total += parseFloat(pesoGrama) * PRECO_GRAMA;
+        detalheTamanhoPeso = `Prato Feito (${pesoGrama}g)`;
+    }
     
     if (carne.value == "Filé mignon" || carne.value == "Estrogonofe") total += 2;
     
+    let bebidas = Array.from(bebidasElems).map(b => b.value);
     bebidas.forEach(b => { 
         let n = b.toLowerCase(); 
         if (n.includes("limoneto")) total += 13; 
@@ -207,19 +248,21 @@ window.montarPedido = function(isWhats = false) {
         else total += 12; 
     });
     
+    let acomp = Array.from(acompElems).map(a => a.value);
     totalGeral += total;
+
     if (isWhats) {
       texto += `🆔 *Nº ${codigo}*\n👤 *Cliente:* ${nome}\n📍 *End:* ${endereco}\n`;
       if (ponto) texto += `📍 *Ref:* ${ponto}\n`;
-      texto += `🍱 *Marmita (${tamanho.value}):* ${carne.value}\n`;
+      texto += `🍱 *${detalheTamanhoPeso}:* ${carne.value}\n`;
       if (acomp.length > 0) texto += `➕ *Acomp:* ${acomp.join(", ")}\n`;
-      if (bebidas.length > 0) texto += `🥤 *Bebida:* ${bebidas.join(", ")}\n`;
+      if (bebidas.length > 0) texto += `🥤 *Bebidas:* ${bebidas.join(", ")}\n`;
       if (obs) texto += `⚠️ *OBS:* ${obs}\n`;
       texto += `💰 *Subtotal:* R$ ${total.toFixed(2)}\n\n-----------------------------\n\n`;
     } else {
-      texto += `CÓDIGO: ${codigo}\nCLIENTE: ${nome}\nTEL: ${telefone}\nENDEREÇO: ${endereco}\n`;
+      texto += `CÓDIGO: ${codigo}\nCLIENTE: ${nome}\nENDEREÇO: ${endereco}\n`;
       if (ponto) texto += `PONTO: ${ponto}\n`;
-      texto += `\nMARMITA (${tamanho.value}): ${carne.value}\n`;
+      texto += `\n${detalheTamanhoPeso.toUpperCase()}: ${carne.value}\n`;
       acomp.forEach(a => texto += `Acompanhamento: ${a}\n`);
       bebidas.forEach(b => texto += `Bebida: ${b}\n`);
       if (obs) texto += `\n*** OBS: ${obs} ***\n`;
@@ -238,9 +281,6 @@ window.montarPedido = function(isWhats = false) {
 window.salvarPedido = function() {
   let texto = window.montarPedido();
   if (!texto) return;
-
-  // CORREÇÃO: Enviando diretamente a string 'texto' para o caminho 'pedidosDia'
-  // para que o Fechamento original consiga ler sem erros de objeto.
   push(ref(db, 'pedidosDia'), texto).then(() => {
       let novoContador = window.contadorCodigo + window.quantidade;
       set(ref(db, 'contadorCodigo'), novoContador);

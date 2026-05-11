@@ -2,44 +2,87 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Gerente - Cardápio Dinâmico</title>
+    <title>Gerente - Painel Profissional</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f4; text-align: center; color: #333; }
-        .container { background: white; padding: 20px; margin: auto; width: 90%; max-width: 1000px; margin-top: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; text-align: center; color: #333; margin: 0; padding: 20px; }
+        .container { background: white; padding: 25px; margin: auto; width: 95%; max-width: 1100px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .grid-colunas { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; margin-top: 20px; }
-        .coluna { flex: 1; min-width: 250px; background: #fafafa; padding: 15px; border-radius: 8px; text-align: left; border: 1px solid #ddd; }
-        h3 { border-bottom: 2px solid #6BC1FF; padding-bottom: 5px; color: #0056b3; }
-        label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; padding: 4px; border-radius: 4px; transition: 0.2s; }
-        label:hover { background: #eef7ff; }
-        
-        .controles { margin-top: 30px; padding: 20px; border-top: 2px dashed #ccc; }
-        button { padding: 10px 18px; margin: 5px; font-size: 14px; cursor: pointer; border: none; border-radius: 6px; background: linear-gradient(135deg, #6BC1FF, #42A1FF); color: white; font-weight: bold; transition: 0.3s; }
-        button:hover { background: linear-gradient(135deg, #42A1FF, #1D70FF); transform: translateY(-1px); }
-        .btn-danger { background: linear-gradient(135deg, #ff6b6b, #ee5253); }
-        .btn-danger:hover { background: #d63031; }
-
-        .campo-senha { position: relative; display: inline-block; }
-        .campo-senha input { padding: 10px; width: 220px; border-radius: 6px; border: 1px solid #ccc; outline: none; }
-        .olho { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; }
-        footer { margin-top: 40px; padding-bottom: 20px; font-size: 12px; color: #888; }
+        .coluna { flex: 1; min-width: 280px; background: #fff; padding: 15px; border-radius: 10px; text-align: left; border: 1px solid #e0e0e0; }
+        h3 { border-bottom: 3px solid #42A1FF; padding-bottom: 8px; color: #1D70FF; margin-top: 0; }
+        label { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 6px; cursor: pointer; transition: 0.2s; border-bottom: 1px solid #f9f9f9; }
+        label:hover { background: #f0f7ff; }
+        input[type="checkbox"] { transform: scale(1.2); }
+        #form-produto { 
+            display: none; background: #f9f9f9; border: 2px solid #42A1FF; 
+            padding: 20px; border-radius: 10px; margin: 20px auto; max-width: 600px; text-align: left;
+        }
+        .campo-grupo { margin-bottom: 15px; }
+        .campo-grupo label { display: block; font-weight: bold; margin-bottom: 5px; border: none; padding: 0; }
+        .campo-grupo input, .campo-grupo select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
+        .controles { margin-top: 30px; }
+        button { padding: 12px 24px; margin: 5px; font-size: 15px; cursor: pointer; border: none; border-radius: 8px; background: linear-gradient(135deg, #6BC1FF, #42A1FF); color: white; font-weight: 600; transition: 0.3s; }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+        .btn-confirmar { background: #2ecc71; }
+        .btn-cancelar { background: #95a5a6; }
+        .btn-danger { background: #e74c3c; }
+        .senha-container { position: relative; }
+        .olho-btn { position: absolute; right: 10px; top: 38px; cursor: pointer; font-size: 18px; }
+        footer { margin-top: 40px; color: #888; font-size: 13px; }
     </style>
 </head>
 <body>
 
 <div class="container" id="loginArea">
-    <h2>Acesso Restrito - Gerente</h2>
-    <div class="campo-senha">
-        <input type="password" id="senha" placeholder="Digite a senha">
-        <span class="olho" onclick="toggleSenha()" id="icone">👁️</span>
+    <h2>🔑 Login do Gerente</h2>
+    <div class="senha-container" style="max-width: 300px; margin: auto;">
+        <input type="password" id="senha" placeholder="Senha" style="width:100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
+        <span class="olho-btn" onclick="toggleSenha('senha', 'iconeLogin')" id="iconeLogin">👁️</span>
     </div>
-    <br><br>
-    <button onclick="login()">Acessar Painel</button>
+    <br>
+    <button onclick="login()">Entrar no Sistema</button>
     <p id="erro" style="color:red"></p>
 </div>
 
 <div id="sistema" class="container" style="display:none">
-    <h2>Painel de Gerenciamento do Cardápio</h2>
+    <h2>📋 Gestão de Cardápio</h2>
     
+    <div id="form-produto">
+        <h3 style="border:none">➕ Cadastrar Novo Item</h3>
+        <div class="grid-colunas" style="margin-top:0">
+            <div class="campo-grupo" style="flex:2">
+                <label>Nome do Produto</label>
+                <input type="text" id="novo-nome" placeholder="Ex: Filé de Frango">
+            </div>
+            <div class="campo-grupo" style="flex:1">
+                <label>Categoria</label>
+                <select id="novo-tipo">
+                    <option value="carnes">Carnes</option>
+                    <option value="acomp">Acompanhamentos</option>
+                    <option value="bebidas">Bebidas</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid-colunas" style="margin-top:0">
+            <div class="campo-grupo">
+                <label>Preço (R$)</label>
+                <input type="number" id="novo-preco" step="0.01" placeholder="0.00">
+            </div>
+            <div class="campo-grupo">
+                <label>Adicional/Obs</label>
+                <input type="text" id="novo-obs" placeholder="Ex: Com limão">
+            </div>
+            <div class="campo-grupo senha-container">
+                <label>Confirmar Senha</label>
+                <input type="password" id="senha-confirmacao">
+                <span class="olho-btn" onclick="toggleSenha('senha-confirmacao', 'iconeConf')" id="iconeConf">👁️</span>
+            </div>
+        </div>
+
+        <button class="btn-confirmar" onclick="confirmarAdicao()">Salvar Produto</button>
+        <button class="btn-cancelar" onclick="fecharFormulario()">Cancelar</button>
+    </div>
+
     <div class="grid-colunas">
         <div class="coluna">
             <h3>🥩 Carnes</h3>
@@ -56,14 +99,14 @@
     </div>
 
     <div class="controles">
-        <button onclick="salvarCardapio()">Sincronizar Selecionados</button>
-        <button onclick="adicionarProduto()">➕ Novo Produto</button>
+        <button onclick="salvarCardapio()">💾 Sincronizar Cardápio do Dia</button>
+        <button onclick="abrirFormulario()">✨ Novo Produto</button>
         <button class="btn-danger" onclick="excluirItens()">🗑️ Excluir Selecionados</button>
         <button onclick="window.open('funcionario.html', '_blank')" style="background: #555;">Tela do Funcionário ↗</button>
     </div>
 </div>
 
-<footer>© 2026 Arthur M. Rangel | Gestão de Restaurante v2.0</footer>
+<footer>© 2026 Arthur M. Rangel | Sistema Gerente v2.1</footer>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -83,10 +126,9 @@
     const db = getDatabase(app);
     const SENHA_MESTRA = "gerente123";
 
-    // --- FUNÇÕES GLOBAIS ---
-    window.toggleSenha = () => {
-        let input = document.getElementById("senha");
-        let icone = document.getElementById("icone");
+    window.toggleSenha = (idInput, idIcone) => {
+        const input = document.getElementById(idInput);
+        const icone = document.getElementById(idIcone);
         input.type = (input.type === "password") ? "text" : "password";
         icone.innerText = (input.type === "password") ? "👁️" : "🚫";
     };
@@ -95,26 +137,42 @@
         if(document.getElementById("senha").value === SENHA_MESTRA){
             document.getElementById("loginArea").style.display="none";
             document.getElementById("sistema").style.display="block";
-            carregarTudo();
+            carregarDadosIniciais();
         } else {
-            document.getElementById("erro").innerText = "Senha incorreta!";
+            document.getElementById("erro").innerText = "Senha inválida!";
         }
     };
 
-    // Carrega produtos disponíveis e o que está marcado hoje
-    async function carregarTudo() {
+    window.abrirFormulario = () => {
+        document.getElementById("form-produto").style.display = "block";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.fecharFormulario = () => {
+        document.getElementById("form-produto").style.display = "none";
+        limparCampos();
+    };
+
+    function limparCampos() {
+        document.getElementById("novo-nome").value = "";
+        document.getElementById("novo-preco").value = "";
+        document.getElementById("novo-obs").value = "";
+        document.getElementById("senha-confirmacao").value = "";
+    }
+
+    async function carregarDadosIniciais() {
         const snapProdutos = await get(ref(db, 'produtos'));
         const snapCardapio = await get(ref(db, 'cardapioDia'));
         
         const produtos = snapProdutos.val() || {};
         const selecionados = snapCardapio.val() || { carnes: [], acomp: [], bebidas: [] };
 
-        renderizarColuna("carnes", produtos.carnes, selecionados.carnes);
-        renderizarColuna("acomp", produtos.acomp, selecionados.acomp);
-        renderizarColuna("bebidas", produtos.bebidas, selecionados.bebidas);
+        renderizarGrade("carnes", produtos.carnes, selecionados.carnes);
+        renderizarGrade("acomp", produtos.acomp, selecionados.acomp);
+        renderizarGrade("bebidas", produtos.bebidas, selecionados.bebidas);
     }
 
-    function renderizarColuna(tipo, lista, marcados) {
+    function renderizarGrade(tipo, lista, marcados) {
         const div = document.getElementById(`lista-${tipo}`);
         div.innerHTML = "";
         if(!lista) return;
@@ -125,63 +183,58 @@
             div.innerHTML += `
                 <label>
                     <input type="checkbox" class="${tipo}" data-nome="${nome}" ${isChecked}> 
-                    ${nome} ${item.valor ? '- R$' + item.valor : ''} ${item.obs ? '('+item.obs+')' : ''}
+                    <span><strong>${nome}</strong> <br> <small>R$ ${item.valor} ${item.obs ? '| ' + item.obs : ''}</small></span>
                 </label>`;
         });
     }
 
+    window.confirmarAdicao = async function() {
+        const nome = document.getElementById("novo-nome").value;
+        const tipo = document.getElementById("novo-tipo").value;
+        const preco = document.getElementById("novo-preco").value;
+        const obs = document.getElementById("novo-obs").value;
+        const senha = document.getElementById("senha-confirmacao").value;
+
+        if(!nome || !preco) return alert("Preencha o nome e o preço!");
+        
+        if(senha === SENHA_MESTRA) {
+            await update(ref(db, `produtos/${tipo}`), {
+                [nome]: { valor: preco, obs: obs }
+            });
+            alert("Produto cadastrado!");
+            fecharFormulario();
+            carregarDadosIniciais();
+        } else {
+            alert("Senha de gerente incorreta!");
+        }
+    };
+
     window.salvarCardapio = function() {
-        const pegarCheckados = (classe) => 
+        const obterSelecionados = (classe) => 
             Array.from(document.querySelectorAll(`.${classe}:checked`)).map(i => i.getAttribute('data-nome'));
 
         set(ref(db, 'cardapioDia'), {
-            carnes: pegarCheckados("carnes"),
-            acomp: pegarCheckados("acomp"),
-            bebidas: pegarCheckados("bebidas")
-        }).then(() => alert("Cardápio do dia atualizado!"));
-    };
-
-    window.adicionarProduto = async function() {
-        const nome = prompt("Nome do produto:");
-        if(!nome) return;
-        const valor = prompt("Valor (ex: 12.00):");
-        const obs = prompt("Algum adicional ou observação? (Deixe vazio se não)");
-        const categoria = prompt("Categoria (carnes, acomp ou bebidas):").toLowerCase();
-        
-        if(!['carnes', 'acomp', 'bebidas'].includes(categoria)) {
-            alert("Categoria inválida!");
-            return;
-        }
-
-        const senha = prompt("Confirme sua senha de gerente:");
-        if(senha === SENHA_MESTRA) {
-            await update(ref(db, `produtos/${categoria}`), {
-                [nome]: { valor, obs }
-            });
-            alert("Produto adicionado com sucesso!");
-            carregarTudo();
-        } else {
-            alert("Senha incorreta! Operação cancelada.");
-        }
+            carnes: obterSelecionados("carnes"),
+            acomp: obterSelecionados("acomp"),
+            bebidas: obterSelecionados("bebidas")
+        }).then(() => alert("O cardápio do dia foi sincronizado!"));
     };
 
     window.excluirItens = async function() {
         const selecionados = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'));
-        
         if(selecionados.length === 0) return alert("Selecione itens para excluir.");
 
-        const senha = prompt(`Deseja excluir ${selecionados.length} item(s)? Confirme sua senha:`);
+        const senha = prompt(`Deseja excluir permanentemente ${selecionados.length} item(s)? Confirme sua senha:`);
         
         if(senha === SENHA_MESTRA) {
-            for (let checkbox of selecionados) {
-                const categoria = checkbox.className;
-                const nome = checkbox.getAttribute('data-nome');
-                await set(ref(db, `produtos/${categoria}/${nome}`), null);
+            for (let check of selecionados) {
+                const cat = check.className;
+                const nome = check.getAttribute('data-nome');
+                await set(ref(db, `produtos/${cat}/${nome}`), null);
             }
-            alert("Itens removidos!");
-            carregarTudo();
+            carregarDadosIniciais();
         } else {
-            alert("Senha incorreta!");
+            alert("Senha incorreta.");
         }
     };
 </script>

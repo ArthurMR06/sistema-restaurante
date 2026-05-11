@@ -85,7 +85,7 @@
             </div>
             <div class="campo-grupo">
                 <label>Valor adicional (R$)</label>
-                <input type="number" id="novo-obs" step="0.01" placeholder="0.00">
+                <input type="number" id="novo-adicional" step="0.01" placeholder="0.00">
             </div>
             <div class="campo-grupo">
                 <label>Confirmar Senha</label>
@@ -168,7 +168,7 @@
         document.getElementById("form-produto").style.display = "none";
         document.getElementById("novo-nome").value = "";
         document.getElementById("novo-preco").value = "";
-        document.getElementById("novo-obs").value = "";
+        document.getElementById("novo-adicional").value = "";
         document.getElementById("senha-confirmacao").value = "";
     };
 
@@ -204,7 +204,7 @@
         const nome = document.getElementById("novo-nome").value;
         const tipo = document.getElementById("novo-tipo").value;
         const preco = document.getElementById("novo-preco").value;
-        let obs = document.getElementById("novo-obs").value;
+        let adicional = document.getElementById("novo-adicional").value;
         const senha = document.getElementById("senha-confirmacao").value;
 
         if(!nome || !preco) {
@@ -212,11 +212,11 @@
             return;
         }
 
-        if(!obs) obs = "0.00";
+        if(!adicional) adicional = "0.00";
         
         if(senha === SENHA_MESTRA) {
             await update(ref(db, `produtos/${tipo}`), {
-                [nome]: { valor: preco, obs: obs }
+                [nome]: { valor: preco, obs: adicional }
             });
             alert("Produto cadastrado!");
             window.fecharFormulario();
